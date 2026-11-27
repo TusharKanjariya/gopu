@@ -513,8 +513,9 @@ pub fn spot(text: &str, now: i64) -> Option<ReminderDraft> {
     let [clock, bare, day, past] = RE.get_or_init(|| {
         [
             r"\b(\d{1,2})(?:[:.](\d{2}))?\s*([ap])\.?m\b",
-            r"\b(?:at|by|around)\s+(\d{1,2})(?::(\d{2}))?\b",
-            r"\b(today|tonight|tomorrow|eod|end of (?:the )?day|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
+            // "at 5", or a time any language writes the same way: "6:30", "18:30", "6 vage", "6 baje"
+            r"\b(at\s+|by\s+|around\s+)?(\d{1,2})(?::(\d{2}))?(\s*(?:vage|baje|o'?clock))?\b",
+            r"\b(today|aaje|aaj|tonight|tomorrow|eod|end of (?:the )?day|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
             r"\b(yesterday|ago|last|was|were|did|had)\b",
         ]
         .map(|p| regex::Regex::new(p).unwrap())
@@ -529,14 +530,16 @@ pub fn spot(text: &str, now: i64) -> Option<ReminderDraft> {
         if s.is_empty() || past.is_match(&l) {
             continue;
         }
-        // clock time: "5 pm", "5:30pm"; else "at 5" (1 to 7 is the afternoon); "eod" is 17:00; a day alone is 09:00
+        // clock time: "5 pm", "5:30pm"; else "at 5", "6:30", "6 vage" (1 to 7 is the afternoon); "eod" is 17:00; a day
+        // alone is 09:00
         let hm = if let Some(c) = clock.captures(&l) {
             let h: u32 = c[1].parse().ok().filter(|h| (1..=12).contains(h))?;
             Some((h % 12 + if &c[3] == "p" { 12 } else { 0 }, c.get(2).map_or(0, |m| m.as_str().parse().unwrap_or(0))))
         } else {
-            bare.captures(&l).and_then(|c| {
-                let h: u32 = c[1].parse().ok().filter(|h| (1..=12).contains(h))?;
-                Some((if h <= 7 { h + 12 } else { h }, c.get(2).map_or(0, |m| m.as_str().parse().unwrap_or(0))))
+            // a lone number ("2 files") isn't a time: it needs "at", minutes or "vage"/"baje"/"o'clock"
+            bare.captures_iter(&l).filter(|c| c.get(1).or(c.get(3)).or(c.get(4)).is_some()).find_map(|c| {
+                let h: u32 = c[2].parse().ok().filter(|h| (1..=23).contains(h))?;
+                Some((if h <= 7 { h + 12 } else { h }, c.get(3).map_or(0, |m| m.as_str().parse().unwrap_or(0))))
             })
         };
         let d = day.captures(&l).map(|c| c[1].to_string());
@@ -589,6 +592,10 @@ mod spot_tests {
         assert_eq!(got("Call you at 8 am"), Some(("1970-01-08".into(), "08:00".into()))); // past today: tomorrow
         assert_eq!(got("Next one is Wednesday at 3 pm"), Some(("1970-01-07".into(), "15:00".into())));
         assert_eq!(got("I called at 5 pm yesterday."), None);
+        assert_eq!(got("Ok, hu tane aaje 6:30 e reminder aapis meeting mate"), Some(("1970-01-07".into(), "18:30".into())));
+        assert_eq!(got("kaam 7 vage pati jase"), Some(("1970-01-07".into(), "19:00".into())));
+        assert_eq!(got("Meeting 18:30 pe hai"), Some(("1970-01-07".into(), "18:30".into())));
+        assert_eq!(got("I sent 2 files"), None);
         assert_eq!(got("Thanks for the update, looks good."), None);
         assert_eq!(spot("Will have it done by EOD", wed_10).unwrap().title, "Will have it done by EOD");
     }
