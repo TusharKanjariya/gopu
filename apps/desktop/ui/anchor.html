@@ -18,6 +18,8 @@
   /* thinking: a saffron ring breathes around the tab */
   body.thinking #shape{stroke:var(--ring);stroke-width:2;animation:breathe 1.2s ease-in-out infinite}
   @keyframes breathe{50%{stroke-width:3.5;stroke-opacity:.55}}
+  /* a reminder is waiting: a steady ring until Done */
+  body.due #shape{stroke:var(--ring);stroke-width:2.5}
   #head{transform-box:fill-box;transform-origin:50% 100%}
   body.hop #head{animation:hop .45s ease-out}
   @keyframes hop{30%{transform:translateY(-4px)}60%{transform:translateY(0) scaleY(.9)}}
@@ -96,6 +98,7 @@ window.anchor = {
     $('body').style.transform = amount ? `translate(${dx * amount * 3}px,${dy * amount * 3}px) scale(${dx ? k : 1},${dy ? k : 1})` : '';
   },
   thinking(on) { document.body.classList.toggle('thinking', on); },
+  due(on) { document.body.classList.toggle('due', on); },
   hop() { document.body.classList.remove('hop'); void document.body.offsetWidth; document.body.classList.add('hop'); },
 };
 anchor.shape('right', false);

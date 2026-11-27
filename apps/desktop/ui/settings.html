@@ -34,6 +34,7 @@
     border-bottom-width:2px;border-radius:4px;padding:6px 10px;outline:0}
   input:focus,select:focus,textarea:focus{border-bottom-color:var(--ring)}
   .key{display:flex;gap:8px}
+  input[type=date],input[type=time]{font:inherit;color:var(--text);background:var(--field);border:1px solid var(--fline);border-radius:4px;padding:5px 8px}
   .hint{color:var(--sub);font-size:12px;margin-top:4px}
   footer{display:flex;align-items:center;gap:10px;padding:14px 32px;border-top:1px solid var(--line)}
   footer button{font:inherit;border-radius:4px;padding:6px 18px;border:1px solid var(--fline);background:var(--field);color:var(--text)}
@@ -173,7 +174,17 @@
   <section class="page" id="reminders" hidden>
     <h1>Reminders</h1>
     <p class="sub">Notes Gopu shows at a time you pick. Nothing is read or sent until you click one.</p>
-    <h2>End-of-day reminder</h2>
+    <h2>One-off</h2>
+    <div class="key" style="flex-wrap:wrap;gap:8px">
+      <input type="text" id="oTitle" maxlength="80" placeholder="What, e.g. Call with Anna" aria-label="What it's for" style="flex:1 1 220px">
+      <input type="date" id="oDate" aria-label="Date"><input type="time" id="oTime" aria-label="Time">
+      <select id="oEarly" aria-label="Show it early" style="width:auto"><option value="0">At the time</option><option value="5">5 min early</option>
+        <option value="10" selected>10 min early</option><option value="15">15 min early</option><option value="30">30 min early</option><option value="60">1 hour early</option></select>
+      <button type="button" id="oAdd">Add reminder</button><button type="button" class="plain" id="oCancel" hidden>Cancel</button></div>
+    <div id="oList"></div>
+    <div class="hint">The note slides out of the Ask Gopu tab, with Snooze and Done. If your PC was asleep, it shows when
+      you're back, marked "missed".</div>
+    <h2>Check-ins</h2>
     <div class="item"><label><input type="checkbox" id="remOn"> On weekdays at</label>
       <input type="time" id="remAt" value="18:00" aria-label="Reminder time"> offer <select id="remAsk" aria-label="Saved ask"></select></div>
     <div class="hint">Offers one of your saved asks (Style page), such as your daily report, in the Ask Gopu box. It
@@ -587,10 +598,52 @@ async function loadAsks(list) {
   });
 }
 
+// One-off reminders: the form adds one (or saves the one being edited); the list is soonest first
+let editing = null;
+const pad = n => String(n).padStart(2, '0');
+function oForm(r) {
+  const d = r ? new Date(r.at * 1000) : new Date(Date.now() + 3600e3);
+  editing = r ? r.id : null;
+  $('oTitle').value = r ? r.title : '';
+  $('oDate').value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  $('oTime').value = r ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : `${pad(d.getHours())}:00`;
+  $('oEarly').value = String(r ? r.early : 10);
+  $('oAdd').textContent = r ? 'Save' : 'Add reminder';
+  $('oCancel').hidden = !r;
+}
+function oList(list) {
+  $('oList').innerHTML = list.length ? list.map(r => {
+    const d = new Date(r.at * 1000);
+    const day = d.toDateString() === new Date().toDateString() ? 'Today' : d.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
+    return `<div class="item" data-oi="${r.id}"><b style="width:76px">${esc(d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}</b>
+      <span class="grow">${esc(r.title)}<div class="hint" style="margin:0">${day}${r.early ? ` · ${r.early} min early` : ''}${r.snoozed ? ' · snoozed' : ''}</div></span>
+      <button class="plain" data-act="edit">Edit</button><button class="plain bad" data-act="del">Delete</button></div>`;
+  }).join('') : '<div class="empty">No reminders yet.</div>';
+  document.querySelectorAll('[data-oi]').forEach(row => {
+    const r = list.find(x => x.id === +row.dataset.oi);
+    row.querySelector('[data-act=edit]').onclick = () => { oForm(r); $('oTitle').focus(); };
+    row.querySelector('[data-act=del]').onclick = async () => {
+      try { oList(await invoke('reminder_delete', { id: r.id })); if (editing === r.id) oForm(); status('Reminder deleted.', 'ok'); } catch (e) { err(e); }
+    };
+  });
+}
+$('oAdd').onclick = async () => {
+  const at = Math.floor(new Date(`${$('oDate').value}T${$('oTime').value}`).getTime() / 1000);
+  if (!at) return err('Pick a date and a time.');
+  try {
+    oList(await invoke('reminder_save', { id: editing, title: $('oTitle').value, at, early: +$('oEarly').value }));
+    status(editing ? 'Saved.' : 'Reminder added.', 'ok'); oForm();
+  } catch (e) { err(e); }
+};
+$('oCancel').onclick = () => oForm();
+$('oTitle').addEventListener('keydown', e => { if (e.key === 'Enter') $('oAdd').click(); });
+
 // the end-of-day reminder: a time and one of the saved asks; off unless ticked
 async function loadReminders() {
   let st;
   try { st = await invoke('ask_state'); } catch (e) { return err(e); }
+  if (editing === null) oForm();
+  oList(st.reminders);
   const list = st.saved, r = st.reminder;
   $('remAsk').innerHTML = list.map(a => `<option>${esc(a.name)}</option>`).join('');
   if (r) { $('remAsk').value = r.ask; $('remAt').value = String(r.at / 60 | 0).padStart(2, '0') + ':' + String(r.at % 60).padStart(2, '0'); }

@@ -316,6 +316,14 @@ pub fn thinking(app: &AppHandle, on: bool) {
     }
 }
 
+/// A reminder is waiting (or not any more): the tab keeps a steady saffron ring until Done.
+// ponytail: the taskbar anchor has no glow; its note stays open instead of folding away (ask_note `fold`)
+pub fn due(app: &AppHandle, on: bool) {
+    if let Some(w) = app.get_webview_window("anchor") {
+        let _ = w.eval(&format!("anchor.due({on})"));
+    }
+}
+
 /// The answer is in: the thinking stops, and the tab hops.
 pub fn done(app: &AppHandle) {
     thinking(app, false);

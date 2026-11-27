@@ -83,6 +83,34 @@ pub struct Settings {
     pub ask_saved: Vec<SavedAsk>,
     /// The end-of-day reminder (off when unset).
     pub ask_reminder: Option<Reminder>,
+    /// One-off reminders ("Call with Anna at 5 PM"), until the user marks them done.
+    pub reminders: Vec<OneOff>,
+}
+
+/// A one-off reminder (reminders map, slice 02). Kept in settings, not memory: forgetting memory never drops one.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct OneOff {
+    pub id: i64,
+    pub title: String,
+    /// When it is (Unix seconds).
+    pub at: i64,
+    /// Show it this many minutes early.
+    pub early: u32,
+    /// Snoozed: show it again at this time instead.
+    pub snoozed: Option<i64>,
+}
+
+impl OneOff {
+    pub fn shows_at(&self) -> i64 {
+        self.snoozed.unwrap_or(self.at - self.early as i64 * 60)
+    }
+
+    /// Due at `now`: `Some(missed)`. Missed when its time itself had passed by the time it could show (the PC was
+    /// asleep or Gopu closed), so the note says so instead of "in 10 min".
+    pub fn due(&self, now: i64) -> Option<bool> {
+        (now >= self.shows_at()).then_some(self.snoozed.is_none() && now > self.at + 120)
+    }
 }
 
 /// The end-of-day reminder: on weekdays at `at` (minutes after local midnight), a note offers the saved ask named `ask`.
@@ -262,5 +290,11 @@ mod tests {
         assert_eq!(reminder_due(18 * 60, monday_6pm - 60, 0), None);
         assert_eq!(reminder_due(18 * 60, monday_6pm - 86_400, 0), None); // Sunday
         assert_eq!(reminder_due(18 * 60, monday_6pm - 5 * 3600, 5 * 3600), Some(4)); // 1 pm UTC is 6 pm at UTC+5
+        // one-offs: shown `early` minutes before; missed when the time itself went by unseen; a snooze moves it
+        let r = OneOff { id: 1, title: "Call".into(), at: 1000 * 60, early: 10, snoozed: None };
+        assert_eq!((r.due(989 * 60), r.due(990 * 60), r.due(1001 * 60)), (None, Some(false), Some(false)));
+        assert_eq!(r.due(1040 * 60), Some(true)); // woke 40 minutes late
+        let s = OneOff { snoozed: Some(1100 * 60), ..r };
+        assert_eq!((s.due(1040 * 60), s.due(1100 * 60)), (None, Some(false))); // snoozed past its time: not "missed"
     }
 }

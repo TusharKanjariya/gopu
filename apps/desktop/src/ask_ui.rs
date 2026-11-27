@@ -22,6 +22,10 @@ static FIRST_FIT: AtomicBool = AtomicBool::new(false);
 static QUIET: AtomicBool = AtomicBool::new(false);
 /// The saved ask the end-of-day note offers, until the box picks it up.
 static REMIND: Mutex<Option<String>> = Mutex::new(None);
+/// One-off reminders showing now (their ids), until Done or Snooze; the tab glows while any are.
+static DUE: Mutex<Vec<i64>> = Mutex::new(Vec::new());
+/// The box was shown for a note: the page shows only the note card (look A), not the whole box.
+static NOTE_ONLY: AtomicBool = AtomicBool::new(false);
 
 /// Where the box goes: where it was pinned, else next to the tab, else the corner of the screen the mouse is on.
 fn spot(app: &AppHandle) -> Option<(i32, i32, bool)> {
@@ -45,7 +49,7 @@ pub fn open(app: &AppHandle) {
             place(app, &w);
         }
         front(&w);
-        let _ = w.eval("ask.refresh(); ask.focus()"); // saved asks may have changed on the Style page
+        let _ = w.eval("ask.full(); ask.refresh(); ask.focus()"); // saved asks may have changed on the Style page
         return;
     }
     *ANCHOR.lock().unwrap() = spot(app);
@@ -113,11 +117,19 @@ fn place(app: &AppHandle, w: &tauri::WebviewWindow) {
 /// sent until the user clicks it.
 pub fn remind(app: &AppHandle, ask: String) {
     *REMIND.lock().unwrap() = Some(ask);
+    show_note(app);
+}
+
+/// Shows the box without taking the keyboard, for a note. A box that's already showing keeps its chat; the note joins
+/// it at the top. A hidden or new one shows only the note.
+fn show_note(app: &AppHandle) {
     let Some(w) = app.get_webview_window("ask") else {
         QUIET.store(true, Ordering::SeqCst);
+        NOTE_ONLY.store(true, Ordering::SeqCst);
         return open(app); // the new page picks the note up when it loads
     };
     if !w.is_visible().unwrap_or(false) {
+        NOTE_ONLY.store(true, Ordering::SeqCst);
         place(app, &w);
         if let Ok(h) = w.hwnd() {
             gopu_core::platform::show_quietly(h.0);
@@ -134,6 +146,7 @@ pub fn watch_reminder(app: AppHandle) {
         loop {
             std::thread::sleep(std::time::Duration::from_secs(30));
             let s = Settings::load();
+            one_offs(&app, &s);
             let Some(r) = s.ask_reminder.filter(|r| s.ask_saved.iter().any(|a| a.name == r.ask)) else { continue };
             let now = gopu_core::memory::now();
             let Some(day) = gopu_core::settings::reminder_due(r.at, now, gopu_core::platform::utc_offset_secs()) else { continue };
@@ -150,6 +163,30 @@ pub fn watch_reminder(app: AppHandle) {
             }
         }
     });
+}
+
+/// One-off reminders that just came due (or were missed while the PC slept) join the note, and the tab glows.
+fn one_offs(app: &AppHandle, s: &Settings) {
+    let now = gopu_core::memory::now();
+    let mut due = DUE.lock().unwrap();
+    due.retain(|id| s.reminders.iter().any(|r| r.id == *id)); // deleted in Settings meanwhile
+    let fresh: Vec<i64> = s.reminders.iter().filter(|r| r.due(now).is_some() && !due.contains(&r.id)).map(|r| r.id).collect();
+    if fresh.is_empty() {
+        return;
+    }
+    due.extend(fresh);
+    drop(due);
+    crate::anchor::due(app, true);
+    show_note(app);
+}
+
+/// A reminder left the note (done, snoozed or deleted): the tab stops glowing once none are left.
+fn settle(app: &AppHandle, id: i64) {
+    let mut due = DUE.lock().unwrap();
+    due.retain(|d| *d != id);
+    if due.is_empty() {
+        crate::anchor::due(app, false);
+    }
 }
 
 /// The box is the window in front (a Gopu-key tap there closes it instead of writing into it).
@@ -244,13 +281,74 @@ pub fn ask_close(app: AppHandle) {
 #[tauri::command]
 pub fn ask_state() -> Value {
     let s = Settings::load();
-    json!({ "pinned": s.ask_pinned, "saved": s.ask_saved, "reminder": s.ask_reminder })
+    json!({ "pinned": s.ask_pinned, "saved": s.ask_saved, "reminder": s.ask_reminder, "reminders": s.reminders })
 }
 
-/// The saved ask the end-of-day note offers, once (the box shows the note).
+/// What the note shows: `{ due: [{ id, title, at, missed }], eod, only, fold }`. `eod`: the saved ask the end-of-day
+/// note offers (given once); `only`: the box was shown just for the note; `fold`: fold it back into the tab if ignored
+/// (with the taskbar anchor there's no tab to fold into, so it stays).
 #[tauri::command]
-pub fn ask_reminder() -> Option<String> {
-    REMIND.lock().unwrap().take()
+pub fn ask_note() -> Value {
+    let s = Settings::load();
+    let now = gopu_core::memory::now();
+    let due = DUE.lock().unwrap().clone();
+    let list: Vec<Value> = s
+        .reminders
+        .iter()
+        .filter(|r| due.contains(&r.id))
+        .map(|r| json!({ "id": r.id, "title": r.title, "at": r.at, "missed": r.due(now).unwrap_or(false) }))
+        .collect();
+    json!({ "due": list, "eod": REMIND.lock().unwrap().take(), "only": NOTE_ONLY.swap(false, Ordering::SeqCst), "fold": !s.ask_in_taskbar() })
+}
+
+/// The Reminders page: a new one-off (`id` None) or an edit. `at`: Unix seconds; `early`: minutes. Returns the list,
+/// soonest first.
+#[tauri::command]
+pub fn reminder_save(id: Option<i64>, title: String, at: i64, early: u32) -> Result<Vec<gopu_core::settings::OneOff>, String> {
+    let title = title.trim().chars().take(80).collect::<String>();
+    if title.is_empty() {
+        return Err("Say what it's for.".into());
+    }
+    if at <= gopu_core::memory::now() {
+        return Err("Pick a time that's still ahead.".into());
+    }
+    let mut s = Settings::load();
+    let next = s.reminders.iter().map(|r| r.id).max().unwrap_or(0) + 1;
+    let r = gopu_core::settings::OneOff { id: id.unwrap_or(next), title, at, early: early.min(24 * 60), snoozed: None };
+    match id {
+        Some(id) => *s.reminders.iter_mut().find(|r| r.id == id).ok_or("That reminder is gone; open the list again.")? = r,
+        None => s.reminders.push(r),
+    }
+    s.reminders.sort_by_key(|r| r.at);
+    s.save()?;
+    Ok(s.reminders)
+}
+
+#[tauri::command]
+pub fn reminder_delete(app: AppHandle, id: i64) -> Result<Vec<gopu_core::settings::OneOff>, String> {
+    let mut s = Settings::load();
+    s.reminders.retain(|r| r.id != id);
+    s.save()?;
+    settle(&app, id);
+    Ok(s.reminders)
+}
+
+/// Done on the note: a one-off is finished, so it goes.
+#[tauri::command]
+pub fn reminder_done(app: AppHandle, id: i64) -> Result<(), String> {
+    reminder_delete(app, id).map(|_| ())
+}
+
+/// Snooze on the note: it comes back at `until` (Unix seconds).
+#[tauri::command]
+pub fn reminder_snooze(app: AppHandle, id: i64, until: i64) -> Result<(), String> {
+    let mut s = Settings::load();
+    if let Some(r) = s.reminders.iter_mut().find(|r| r.id == id) {
+        r.snoozed = Some(until.max(gopu_core::memory::now() + 60));
+        s.save()?;
+    }
+    settle(&app, id);
+    Ok(())
 }
 
 /// The Style page's reminder: `at` minutes after midnight and the saved ask's name; `None` turns it off.
