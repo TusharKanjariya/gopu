@@ -85,6 +85,9 @@ pub struct Settings {
     pub ask_reminder: Option<Reminder>,
     /// One-off reminders ("Call with Anna at 5 PM"), until the user marks them done.
     pub reminders: Vec<OneOff>,
+    /// Fields this build doesn't know (written by a newer Gopu), kept as they are so saving never drops them.
+    #[serde(flatten)]
+    pub other: serde_json::Map<String, serde_json::Value>,
 }
 
 /// A one-off reminder (reminders map, slice 02). Kept in settings, not memory: forgetting memory never drops one.
@@ -274,9 +277,12 @@ mod tests {
         assert_eq!(Settings::default().key_vk(), 0xA3);
         assert_eq!(Settings { key: Some(0xA1), ..Default::default() }.key_vk(), 0xA1);
         assert_eq!(Settings { key: Some(0x5B), ..Default::default() }.key_vk(), 0xA3); // Win: not allowed
-        // old or hand-edited files: unknown fields ignored, missing ones default
-        let s: Settings = serde_json::from_str(r#"{"model":"x","later":1}"#).unwrap();
-        assert_eq!(s, Settings { model: Some("x".into()), ..Default::default() });
+        // old or hand-edited files: missing fields default; fields from a newer Gopu survive a save (an older build
+        // once wiped the user's reminders by dropping them)
+        let s: Settings = serde_json::from_str(r#"{"model":"x","later":[1]}"#).unwrap();
+        assert_eq!((s.model.as_deref(), s.paused), (Some("x"), false));
+        let back: serde_json::Value = serde_json::from_str(&serde_json::to_string(&s).unwrap()).unwrap();
+        assert_eq!(back["later"], serde_json::json!([1]));
         // memory: on by default; a pause ends by itself; off wins
         assert_eq!(Settings::default().memory_state(100), MemoryState::On);
         let p = Settings { memory_paused_until: Some(200), ..Default::default() };
