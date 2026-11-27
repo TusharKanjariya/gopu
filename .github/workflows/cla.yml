@@ -1,4 +1,4 @@
-# Asks every outside contributor to sign CLA.md once; signatures are kept on the cla-signatures branch.
+# Asks every contributor, the owner included, to sign CLA.md once; signatures are kept on the cla-signatures branch.
 name: CLA
 on:
   issue_comment:
@@ -22,4 +22,4 @@ jobs:
           path-to-signatures: signatures/cla.json
           path-to-document: https://github.com/TusharKanjariya/gopu/blob/master/CLA.md
           branch: cla-signatures
-          allowlist: TusharKanjariya,dependabot[bot]
+          allowlist: dependabot[bot]
