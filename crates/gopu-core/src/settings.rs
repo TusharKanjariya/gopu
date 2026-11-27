@@ -81,8 +81,10 @@ pub struct Settings {
     pub ask_tab_edge: Option<String>,
     /// Ask Gopu's saved asks: the ★ buttons in the box.
     pub ask_saved: Vec<SavedAsk>,
-    /// The end-of-day reminder (off when unset).
+    /// The end-of-day reminder from before check-ins (0.1.0); `load` turns it into the first check-in.
     pub ask_reminder: Option<Reminder>,
+    /// Check-ins: saved asks offered on a schedule (reminders map, slice 03).
+    pub check_ins: Vec<CheckIn>,
     /// One-off reminders ("Call with Anna at 5 PM"), until the user marks them done.
     pub reminders: Vec<OneOff>,
     /// Fields this build doesn't know (written by a newer Gopu), kept as they are so saving never drops them.
@@ -116,20 +118,37 @@ impl OneOff {
     }
 }
 
-/// The end-of-day reminder: on weekdays at `at` (minutes after local midnight), a note offers the saved ask named `ask`.
+/// The end-of-day reminder as 0.1.0 saved it: weekdays at `at` (minutes after local midnight), offering `ask`.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Reminder {
     pub at: u32,
     pub ask: String,
 }
 
-/// The local day (days since 1970-01-01) if a reminder set for `at` is due at `now`: a weekday, within the hour after
-/// its time (a PC woken later than that skips the day). The caller shows it once per day.
-pub fn reminder_due(at: u32, now: i64, utc_offset: i64) -> Option<i64> {
-    let local = now + utc_offset;
-    let (day, mins) = (local.div_euclid(86_400), local.rem_euclid(86_400) / 60);
-    let weekday = (day + 4).rem_euclid(7); // 0 is Sunday; 1970-01-01 was a Thursday
-    ((1..=5).contains(&weekday) && (at as i64..at as i64 + 60).contains(&mins)).then_some(day)
+/// Monday to Friday, as check-in days (bit 0 is Sunday).
+pub const WEEKDAYS: u8 = 0b011_1110;
+
+/// A check-in: on the chosen days at `at` (minutes after local midnight), a note offers the saved ask named `ask`.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct CheckIn {
+    pub id: i64,
+    pub ask: String,
+    /// Bit n set: due on weekday n (0 is Sunday).
+    pub days: u8,
+    pub at: u32,
+    pub on: bool,
+}
+
+impl CheckIn {
+    /// The local day (days since 1970-01-01) if it's due at `now`: one of its days, within the hour after its time
+    /// (a PC woken later than that skips the day). The caller shows it once per day.
+    pub fn due(&self, now: i64, utc_offset: i64) -> Option<i64> {
+        let local = now + utc_offset;
+        let (day, mins) = (local.div_euclid(86_400), local.rem_euclid(86_400) / 60);
+        let weekday = (day + 4).rem_euclid(7); // 1970-01-01 was a Thursday
+        (self.on && self.days & (1 << weekday) != 0 && (self.at as i64..self.at as i64 + 60).contains(&mins)).then_some(day)
+    }
 }
 
 /// A saved ask: the button's name and the request it sends (a format, a scope, whatever the user wrote).
@@ -209,13 +228,29 @@ impl Settings {
 
     /// The saved settings; defaults when there's no file yet or it can't be read.
     pub fn load() -> Settings {
-        Self::path().and_then(|p| std::fs::read_to_string(p).ok()).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default()
+        let s: Settings =
+            Self::path().and_then(|p| std::fs::read_to_string(p).ok()).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+        s.migrated()
     }
 
+    /// 0.1.0's end-of-day reminder becomes the first check-in (saved with the next save).
+    fn migrated(mut self) -> Settings {
+        if let Some(r) = self.ask_reminder.take() {
+            if self.check_ins.is_empty() {
+                self.check_ins.push(CheckIn { id: 1, ask: r.ask, days: WEEKDAYS, at: r.at, on: true });
+            }
+        }
+        self
+    }
+
+    /// Written to a temporary file, then swapped in: a read never sees half a file (which would load as defaults, and
+    /// the next save would wipe everything).
     pub fn save(&self) -> Result<(), String> {
         let path = Self::path().ok_or("no config folder")?;
         std::fs::create_dir_all(path.parent().unwrap()).map_err(|e| e.to_string())?;
-        std::fs::write(&path, serde_json::to_string_pretty(self).unwrap()).map_err(|e| e.to_string())
+        let tmp = path.with_extension("json.tmp");
+        std::fs::write(&tmp, serde_json::to_string_pretty(self).unwrap()).map_err(|e| e.to_string())?;
+        std::fs::rename(&tmp, &path).map_err(|e| e.to_string())
     }
 
     /// Saved value → provider preset → env var → Groq default. `env` is `crate::setting` outside tests.
@@ -288,14 +323,22 @@ mod tests {
         let p = Settings { memory_paused_until: Some(200), ..Default::default() };
         assert_eq!((p.memory_state(100), p.memory_state(200)), (MemoryState::Paused(200), MemoryState::On));
         assert_eq!(Settings { memory_off: true, ..p }.memory_state(100), MemoryState::Off);
-        // the reminder: weekdays, within the hour after its time, local time
+        // a check-in: its days only, within the hour after its time, local time; off is never due
         let monday_6pm = 4 * 86_400 + 18 * 3600; // 1970-01-05
-        assert_eq!(reminder_due(18 * 60, monday_6pm, 0), Some(4));
-        assert_eq!(reminder_due(18 * 60, monday_6pm + 59 * 60, 0), Some(4));
-        assert_eq!(reminder_due(18 * 60, monday_6pm + 60 * 60, 0), None);
-        assert_eq!(reminder_due(18 * 60, monday_6pm - 60, 0), None);
-        assert_eq!(reminder_due(18 * 60, monday_6pm - 86_400, 0), None); // Sunday
-        assert_eq!(reminder_due(18 * 60, monday_6pm - 5 * 3600, 5 * 3600), Some(4)); // 1 pm UTC is 6 pm at UTC+5
+        let c = CheckIn { id: 1, ask: "Daily report".into(), days: WEEKDAYS, at: 18 * 60, on: true };
+        assert_eq!(c.due(monday_6pm, 0), Some(4));
+        assert_eq!(c.due(monday_6pm + 59 * 60, 0), Some(4));
+        assert_eq!(c.due(monday_6pm + 60 * 60, 0), None);
+        assert_eq!(c.due(monday_6pm - 60, 0), None);
+        assert_eq!(c.due(monday_6pm - 86_400, 0), None); // Sunday
+        assert_eq!(c.due(monday_6pm - 5 * 3600, 5 * 3600), Some(4)); // 1 pm UTC is 6 pm at UTC+5
+        assert_eq!(CheckIn { days: 1, ..c.clone() }.due(monday_6pm - 86_400, 0), Some(3)); // Sundays only
+        assert_eq!(CheckIn { on: false, ..c.clone() }.due(monday_6pm, 0), None);
+        // 0.1.0's end-of-day reminder becomes the first check-in, once
+        let old: Settings = serde_json::from_str(r#"{"ask_reminder":{"at":1080,"ask":"Daily report"}}"#).unwrap();
+        let m = old.migrated();
+        assert_eq!((m.ask_reminder.is_none(), m.check_ins.clone()), (true, vec![c.clone()]));
+        assert_eq!(m.migrated().check_ins.len(), 1);
         // one-offs: shown `early` minutes before; missed when the time itself went by unseen; a snooze moves it
         let r = OneOff { id: 1, title: "Call".into(), at: 1000 * 60, early: 10, snoozed: None };
         assert_eq!((r.due(989 * 60), r.due(990 * 60), r.due(1001 * 60)), (None, Some(false), Some(false)));

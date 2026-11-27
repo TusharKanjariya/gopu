@@ -21,7 +21,7 @@ static FIRST_FIT: AtomicBool = AtomicBool::new(false);
 /// The box being created shows without taking the keyboard (the reminder opened it).
 static QUIET: AtomicBool = AtomicBool::new(false);
 /// The saved ask the end-of-day note offers, until the box picks it up.
-static REMIND: Mutex<Option<String>> = Mutex::new(None);
+static REMIND: Mutex<Vec<String>> = Mutex::new(Vec::new());
 /// One-off reminders showing now (their ids), until Done or Snooze; the tab glows while any are.
 static DUE: Mutex<Vec<i64>> = Mutex::new(Vec::new());
 /// The box was shown for a note: the page shows only the note card (look A), not the whole box.
@@ -115,8 +115,8 @@ fn place(app: &AppHandle, w: &tauri::WebviewWindow) {
 
 /// The end-of-day note: the box shows, without taking the keyboard, offering the saved ask `ask`. Nothing is read or
 /// sent until the user clicks it.
-pub fn remind(app: &AppHandle, ask: String) {
-    *REMIND.lock().unwrap() = Some(ask);
+pub fn remind(app: &AppHandle, asks: Vec<String>) {
+    REMIND.lock().unwrap().extend(asks);
     show_note(app);
 }
 
@@ -142,27 +142,39 @@ fn show_note(app: &AppHandle) {
 /// memory caught nothing today. It only looks at whether anything was captured; no model call until it's clicked.
 pub fn watch_reminder(app: AppHandle) {
     std::thread::spawn(move || {
-        let mut shown = None;
+        // check-in id → the local day it last showed
+        let mut shown = std::collections::HashMap::new();
         loop {
             std::thread::sleep(std::time::Duration::from_secs(30));
             let s = Settings::load();
             one_offs(&app, &s);
-            let Some(r) = s.ask_reminder.filter(|r| s.ask_saved.iter().any(|a| a.name == r.ask)) else { continue };
-            let now = gopu_core::memory::now();
-            let Some(day) = gopu_core::settings::reminder_due(r.at, now, gopu_core::platform::utc_offset_secs()) else { continue };
-            if shown == Some(day) {
-                continue;
-            }
-            shown = Some(day);
-            let captured = gopu_core::memory::db_path()
-                .and_then(|p| gopu_core::memory::Store::open_read_only(&p).ok())
-                .and_then(|st| st.windows(gopu_core::memory::today_start(now), now + 1).ok())
-                .is_some_and(|w| !w.is_empty());
-            if captured {
-                remind(&app, r.ask);
-            }
+            check_ins(&app, &s, &mut shown);
         }
     });
+}
+
+/// Check-ins that just came due, once a day each. Skipped when memory has nothing from the last 3 days (memory off, or
+/// the PC unused), since there'd be nothing to answer from; a Monday-morning check-in still shows after a weekend.
+fn check_ins(app: &AppHandle, s: &Settings, shown: &mut std::collections::HashMap<i64, i64>) {
+    let now = gopu_core::memory::now();
+    let off = gopu_core::platform::utc_offset_secs();
+    let mut asks = Vec::new();
+    for c in s.check_ins.iter().filter(|c| s.ask_saved.iter().any(|a| a.name == c.ask)) {
+        if let Some(day) = c.due(now, off).filter(|d| shown.get(&c.id) != Some(d)) {
+            shown.insert(c.id, day);
+            asks.push(c.ask.clone());
+        }
+    }
+    if asks.is_empty() {
+        return;
+    }
+    let remembered = gopu_core::memory::db_path()
+        .and_then(|p| gopu_core::memory::Store::open_read_only(&p).ok())
+        .and_then(|st| st.windows(now - 3 * 86_400, now + 1).ok())
+        .is_some_and(|w| !w.is_empty());
+    if remembered {
+        remind(app, asks);
+    }
 }
 
 /// One-off reminders that just came due (or were missed while the PC slept) join the note, and the tab glows.
@@ -281,11 +293,11 @@ pub fn ask_close(app: AppHandle) {
 #[tauri::command]
 pub fn ask_state() -> Value {
     let s = Settings::load();
-    json!({ "pinned": s.ask_pinned, "saved": s.ask_saved, "reminder": s.ask_reminder, "reminders": s.reminders })
+    json!({ "pinned": s.ask_pinned, "saved": s.ask_saved, "check_ins": s.check_ins, "reminders": s.reminders })
 }
 
-/// What the note shows: `{ due: [{ id, title, at, missed }], eod, only, fold }`. `eod`: the saved ask the end-of-day
-/// note offers (given once); `only`: the box was shown just for the note; `fold`: fold it back into the tab if ignored
+/// What the note shows: `{ due: [{ id, title, at, missed }], asks, only, fold }`. `asks`: the saved asks check-ins
+/// offer (given once); `only`: the box was shown just for the note; `fold`: fold it back into the tab if ignored
 /// (with the taskbar anchor there's no tab to fold into, so it stays).
 #[tauri::command]
 pub fn ask_note() -> Value {
@@ -298,7 +310,7 @@ pub fn ask_note() -> Value {
         .filter(|r| due.contains(&r.id))
         .map(|r| json!({ "id": r.id, "title": r.title, "at": r.at, "missed": r.due(now).unwrap_or(false) }))
         .collect();
-    json!({ "due": list, "eod": REMIND.lock().unwrap().take(), "only": NOTE_ONLY.swap(false, Ordering::SeqCst), "fold": !s.ask_in_taskbar() })
+    json!({ "due": list, "asks": std::mem::take(&mut *REMIND.lock().unwrap()), "only": NOTE_ONLY.swap(false, Ordering::SeqCst), "fold": !s.ask_in_taskbar() })
 }
 
 /// The Reminders page: a new one-off (`id` None) or an edit. `at`: Unix seconds; `early`: minutes. Returns the list,
@@ -351,12 +363,29 @@ pub fn reminder_snooze(app: AppHandle, id: i64, until: i64) -> Result<(), String
     Ok(())
 }
 
-/// The Style page's reminder: `at` minutes after midnight and the saved ask's name; `None` turns it off.
+/// The Reminders page: a new check-in (`id` None) or a change to one. Returns the list.
 #[tauri::command]
-pub fn ask_reminder_set(at: Option<u32>, ask: String) -> Result<(), String> {
+pub fn check_in_save(id: Option<i64>, ask: String, days: u8, at: u32, on: bool) -> Result<Vec<gopu_core::settings::CheckIn>, String> {
+    if at >= 24 * 60 {
+        return Err("Pick a time of day.".into());
+    }
     let mut s = Settings::load();
-    s.ask_reminder = at.filter(|&m| m < 24 * 60).map(|at| gopu_core::settings::Reminder { at, ask });
-    s.save()
+    let next = s.check_ins.iter().map(|c| c.id).max().unwrap_or(0) + 1;
+    let c = gopu_core::settings::CheckIn { id: id.unwrap_or(next), ask, days: days & 0x7f, at, on };
+    match id {
+        Some(id) => *s.check_ins.iter_mut().find(|c| c.id == id).ok_or("That check-in is gone; open the list again.")? = c,
+        None => s.check_ins.push(c),
+    }
+    s.save()?;
+    Ok(s.check_ins)
+}
+
+#[tauri::command]
+pub fn check_in_delete(id: i64) -> Result<Vec<gopu_core::settings::CheckIn>, String> {
+    let mut s = Settings::load();
+    s.check_ins.retain(|c| c.id != id);
+    s.save()?;
+    Ok(s.check_ins)
 }
 
 /// Saves an ask (`index` None: a new one; else replaces that one). Returns the list.
@@ -370,10 +399,9 @@ pub fn ask_saved_set(index: Option<usize>, name: String, text: String) -> Result
     let ask = gopu_core::settings::SavedAsk { name, text };
     match index {
         Some(i) if i < s.ask_saved.len() => {
-            // a renamed ask keeps its reminder
-            if let Some(r) = s.ask_reminder.as_mut().filter(|r| r.ask == s.ask_saved[i].name) {
-                r.ask = ask.name.clone();
-            }
+            // a renamed ask keeps its check-ins
+            let old = s.ask_saved[i].name.clone();
+            s.check_ins.iter_mut().filter(|c| c.ask == old).for_each(|c| c.ask = ask.name.clone());
             s.ask_saved[i] = ask
         }
         Some(_) => return Err("That ask is gone; open the list again.".into()),

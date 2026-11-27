@@ -23,7 +23,7 @@ fn main() {
             memory_ui::memory_ignore, memory_ui::memory_set, memory_ui::people_list, memory_ui::people_save,
             memory_ui::people_delete, memory_ui::style_state, memory_ui::style_save, memory_ui::style_delete, memory_ui::mcp_state, memory_ui::mcp_set,
             update::update_state, update::update_check, update::update_install,
-            anchor::anchor_click, anchor::anchor_drag, ask_ui::ask_fit, ask_ui::ask_drag, ask_ui::ask_close, ask_ui::ask_state, ask_ui::ask_pin, ask_ui::ask_open_capture, ask_ui::ask_question, ask_ui::ask_saved_set, ask_ui::ask_saved_delete, ask_ui::ask_chats, ask_ui::ask_chat, ask_ui::ask_note, ask_ui::ask_reminder_set, ask_ui::reminder_save, ask_ui::reminder_delete, ask_ui::reminder_done, ask_ui::reminder_snooze,
+            anchor::anchor_click, anchor::anchor_drag, ask_ui::ask_fit, ask_ui::ask_drag, ask_ui::ask_close, ask_ui::ask_state, ask_ui::ask_pin, ask_ui::ask_open_capture, ask_ui::ask_question, ask_ui::ask_saved_set, ask_ui::ask_saved_delete, ask_ui::ask_chats, ask_ui::ask_chat, ask_ui::ask_note, ask_ui::check_in_save, ask_ui::check_in_delete, ask_ui::reminder_save, ask_ui::reminder_delete, ask_ui::reminder_done, ask_ui::reminder_snooze,
         ])
         .setup(|app| {
             let overlay = app.get_webview_window("overlay").expect("overlay window");
@@ -394,7 +394,7 @@ async fn settings_save(app: AppHandle, mut saved: Settings, key: Option<String>)
         (now.memory_off, now.memory_paused_until, now.ignore, now.keep_days);
     (saved.mcp_on, saved.mcp_blocked) = (now.mcp_on, now.mcp_blocked); // the Privacy page sets these at once
     (saved.ask_pinned, saved.ask_at, saved.ask_tab_at, saved.ask_tab_edge) = (now.ask_pinned, now.ask_at, now.ask_tab_at, now.ask_tab_edge);
-    (saved.ask_saved, saved.ask_reminder, saved.reminders) = (now.ask_saved, now.ask_reminder, now.reminders); // the box and the Style page set these
+    (saved.ask_saved, saved.ask_reminder, saved.check_ins, saved.reminders) = (now.ask_saved, now.ask_reminder, now.check_ins, now.reminders); // the box and the Style page set these
     if let Some(c) = saved.chord {
         if !platform::chord_free(c.mods, c.vk) {
             return Err("that shortcut is already used by Windows or another app; pick another".into());
