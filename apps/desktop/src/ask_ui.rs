@@ -25,6 +25,8 @@ static REMIND: Mutex<Vec<String>> = Mutex::new(Vec::new());
 /// One-off reminders showing now (their ids), until Done or Snooze; the tab glows while any are.
 static DUE: Mutex<Vec<i64>> = Mutex::new(Vec::new());
 /// The box was shown for a note: the page shows only the note card (look A), not the whole box.
+/// A plan spotted in the user's reply, waiting for the note to show "Remind you?" (given once).
+static OFFER: Mutex<Option<gopu_core::ask::ReminderDraft>> = Mutex::new(None);
 static NOTE_ONLY: AtomicBool = AtomicBool::new(false);
 
 /// Where the box goes: where it was pinned, else next to the tab, else the corner of the screen the mouse is on.
@@ -122,6 +124,20 @@ pub fn remind(app: &AppHandle, asks: Vec<String>) {
 
 /// Shows the box without taking the keyboard, for a note. A box that's already showing keeps its chat; the note joins
 /// it at the top. A hidden or new one shows only the note.
+/// "Remind you?" by the tab for a plan in the reply just written; the note drops it after 15 s.
+pub fn offer(app: &AppHandle, d: gopu_core::ask::ReminderDraft) {
+    *OFFER.lock().unwrap() = Some(d);
+    show_note(app);
+}
+
+/// The Reminders page's "Offer reminders from my replies" switch.
+#[tauri::command]
+pub fn offers_set(on: bool) -> Result<(), String> {
+    let mut s = Settings::load();
+    s.offers_off = !on;
+    s.save()
+}
+
 fn show_note(app: &AppHandle) {
     let Some(w) = app.get_webview_window("ask") else {
         QUIET.store(true, Ordering::SeqCst);
@@ -310,7 +326,7 @@ pub fn ask_note() -> Value {
         .filter(|r| due.contains(&r.id))
         .map(|r| json!({ "id": r.id, "title": r.title, "at": r.at, "missed": r.due(now).unwrap_or(false) }))
         .collect();
-    json!({ "due": list, "asks": std::mem::take(&mut *REMIND.lock().unwrap()), "only": NOTE_ONLY.swap(false, Ordering::SeqCst), "fold": !s.ask_in_taskbar() })
+    json!({ "due": list, "asks": std::mem::take(&mut *REMIND.lock().unwrap()), "offer": OFFER.lock().unwrap().take(), "only": NOTE_ONLY.swap(false, Ordering::SeqCst), "fold": !s.ask_in_taskbar() })
 }
 
 /// The Reminders page: a new one-off (`id` None) or an edit. `at`: Unix seconds; `early`: minutes. Returns the list,

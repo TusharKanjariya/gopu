@@ -502,3 +502,94 @@ mod remind_tests {
         assert!(draft("{\"title\":\" \",\"date\":\"2026-11-27\",\"time\":\"17:00\",\"early\":0}").is_err());
     }
 }
+
+// ---------------------------------------------------------------- offers (reminders slice 06)
+
+/// A plan with a time in a reply the user just sent through the Gopu key ("I'll send it by Friday", "let's talk at
+/// 5 PM"), read locally, no model call: the first sentence with a day or a clock time still ahead. The tab offers
+/// "Remind you?"; nothing is saved without a click. None: no plan, or one in the past ("I called at 5 yesterday").
+pub fn spot(text: &str, now: i64) -> Option<ReminderDraft> {
+    static RE: std::sync::OnceLock<[regex::Regex; 4]> = std::sync::OnceLock::new();
+    let [clock, bare, day, past] = RE.get_or_init(|| {
+        [
+            r"\b(\d{1,2})(?:[:.](\d{2}))?\s*([ap])\.?m\b",
+            r"\b(?:at|by|around)\s+(\d{1,2})(?::(\d{2}))?\b",
+            r"\b(today|tonight|tomorrow|eod|end of (?:the )?day|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
+            r"\b(yesterday|ago|last|was|were|did|had)\b",
+        ]
+        .map(|p| regex::Regex::new(p).unwrap())
+    });
+    let off = crate::platform::utc_offset_secs();
+    let today = (now + off).div_euclid(86_400);
+    let secs = (now + off).rem_euclid(86_400);
+    let now_text = format!("{} {:02}:{:02}", crate::people::local_date(now), secs / 3600, secs % 3600 / 60);
+    for sentence in text.split_inclusive(['.', '!', '?', '\n']) {
+        let s = sentence.trim();
+        let l = s.to_lowercase();
+        if s.is_empty() || past.is_match(&l) {
+            continue;
+        }
+        // clock time: "5 pm", "5:30pm"; else "at 5" (1 to 7 is the afternoon); "eod" is 17:00; a day alone is 09:00
+        let hm = if let Some(c) = clock.captures(&l) {
+            let h: u32 = c[1].parse().ok().filter(|h| (1..=12).contains(h))?;
+            Some((h % 12 + if &c[3] == "p" { 12 } else { 0 }, c.get(2).map_or(0, |m| m.as_str().parse().unwrap_or(0))))
+        } else {
+            bare.captures(&l).and_then(|c| {
+                let h: u32 = c[1].parse().ok().filter(|h| (1..=12).contains(h))?;
+                Some((if h <= 7 { h + 12 } else { h }, c.get(2).map_or(0, |m| m.as_str().parse().unwrap_or(0))))
+            })
+        };
+        let d = day.captures(&l).map(|c| c[1].to_string());
+        let hm = match (hm, d.as_deref()) {
+            (Some(hm), _) => hm,
+            (None, Some("tonight")) => (20, 0),
+            (None, Some(w)) if w == "eod" || w.starts_with("end of") => (17, 0),
+            (None, Some(_)) => (9, 0),
+            (None, None) => continue,
+        };
+        if hm.0 > 23 || hm.1 > 59 {
+            continue;
+        }
+        let time = format!("{:02}:{:02}", hm.0, hm.1);
+        // which day: named, else today if the time is still ahead, else tomorrow
+        let ahead = format!("{} {time}", crate::people::local_date(now)) > now_text;
+        let add = match d.as_deref() {
+            Some("tomorrow") => 1,
+            Some(w) if WEEKDAYS.contains(&capital(w).as_str()) => {
+                let want = WEEKDAYS.iter().position(|x| x.eq_ignore_ascii_case(w)).unwrap() as i64;
+                let n = (want - today.rem_euclid(7)).rem_euclid(7);
+                if n == 0 && !ahead { 7 } else { n }
+            }
+            _ if ahead => 0,
+            _ => 1,
+        };
+        let title: String = s.trim_end_matches(['.', '!', '?']).chars().take(80).collect();
+        return Some(ReminderDraft { title, date: crate::people::local_date(now + add * 86_400), time, early: 10 });
+    }
+    None
+}
+
+fn capital(w: &str) -> String {
+    w[..1].to_uppercase() + &w[1..]
+}
+
+#[cfg(test)]
+mod spot_tests {
+    use super::*;
+
+    #[test]
+    fn spots_plans_ahead() {
+        // a Wednesday at 10:00 local (WEEKDAYS index 6); built from local_date's own arithmetic so any timezone works
+        let off = crate::platform::utc_offset_secs();
+        let wed_10 = 6 * 86_400 + 10 * 3600 - off; // 1970-01-07 was a Wednesday
+        let got = |t: &str| spot(t, wed_10).map(|d| (d.date, d.time));
+        assert_eq!(got("Sure, I'll send it by Friday."), Some(("1970-01-09".into(), "09:00".into())));
+        assert_eq!(got("Thanks! Let's talk at 5."), Some(("1970-01-07".into(), "17:00".into())));
+        assert_eq!(got("I can do 9:30 am tomorrow"), Some(("1970-01-08".into(), "09:30".into())));
+        assert_eq!(got("Call you at 8 am"), Some(("1970-01-08".into(), "08:00".into()))); // past today: tomorrow
+        assert_eq!(got("Next one is Wednesday at 3 pm"), Some(("1970-01-07".into(), "15:00".into())));
+        assert_eq!(got("I called at 5 pm yesterday."), None);
+        assert_eq!(got("Thanks for the update, looks good."), None);
+        assert_eq!(spot("Will have it done by EOD", wed_10).unwrap().title, "Will have it done by EOD");
+    }
+}

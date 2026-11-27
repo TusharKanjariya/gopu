@@ -187,6 +187,11 @@
     <div id="oList"></div>
     <div class="hint">The note slides out of the Ask Gopu tab, with Snooze and Done. If your PC was asleep, it shows when
       you're back, marked "missed".</div>
+    <h2>Offers</h2>
+    <label class="check"><input type="checkbox" id="offersOn"> Offer reminders from my replies</label>
+    <div class="hint">When a reply you write with the Gopu key has a plan with a time ("I'll send it by Friday", "talk at
+      5"), the tab asks "Remind you?" for 15 seconds. Spotted on this PC, no model call; nothing is added unless you
+      click Add.</div>
     <h2>Check-ins</h2>
     <div id="ciList"></div>
     <div class="key" style="margin-top:8px"><button type="button" id="ciAdd">New check-in</button></div>
@@ -782,6 +787,8 @@ async function loadPeople() {
   $('useMemory').checked = !data.saved.recall_off;
   $('autostart').checked = !data.saved.autostart_off;
   $('updAuto').checked = !data.saved.updates_off;
+  $('offersOn').checked = !data.saved.offers_off;
+  $('offersOn').onchange = async () => { try { await invoke('offers_set', { on: $('offersOn').checked }); status('Saved.', 'ok'); } catch (e) { err(e); } };
   document.querySelector(`input[name=anchor][value=${data.saved.ask_anchor === 'taskbar' ? 'taskbar' : 'edge'}]`).checked = true;
   showProvider(saved);
   // #search:123 opens a capture (a source cited in the Ask Gopu box)

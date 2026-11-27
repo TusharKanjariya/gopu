@@ -69,6 +69,8 @@ pub struct Settings {
     pub autostart_off: bool,
     /// "Check for updates once a day" unticked.
     pub updates_off: bool,
+    /// "Offer reminders from my replies" unticked (Reminders page).
+    pub offers_off: bool,
     /// The Ask Gopu box is pinned: it stays on screen when the user clicks elsewhere.
     pub ask_pinned: bool,
     /// Where the pinned box was left: its bottom-left corner (physical px), so it grows upward from there.
