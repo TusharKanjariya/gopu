@@ -8,3 +8,4 @@ Bug reports, ideas and pull requests are welcome.
   for. The [Contributor Licence Agreement](CLA.md) lets the project's owner relicense or transfer Gopu with your work
   in it. You keep the copyright.
 - **The name and mascot** are reserved; see [TRADEMARKS.md](TRADEMARKS.md).
+
