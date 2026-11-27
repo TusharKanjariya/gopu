@@ -1,0 +1,285 @@
+<!doctype html>
+<!-- Reminders (0.2.0): three looks for the due note, two for the Reminders page, and the two ways to add one outside
+     Settings. Static mockup for deciding; names and data are made up. Render: headless Chrome, 1800 wide, full page. -->
+<html><head><meta charset="utf-8"><title>Gopu reminders: looks</title>
+<style>
+  :root{--acc:#B2600B;--ring:#E8891C;--text:#1b1b1b;--sub:#616161;--line:#e5e5e5;--you:#fbe9d6}
+  body{margin:0;background:#ececec;font:14px 'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif;color:var(--text)}
+  h1{font:600 26px 'Segoe UI Variable Display','Segoe UI';margin:26px 32px 4px}
+  h2{font:600 20px 'Segoe UI Variable Display','Segoe UI';margin:30px 32px 4px}
+  .lede{margin:0 32px 18px;color:var(--sub);max-width:1500px;line-height:1.45}
+  .row{display:flex;gap:16px;margin:0 32px 30px;align-items:flex-start}
+  .label{width:210px;flex:none}
+  .label b{font:600 18px 'Segoe UI Variable Display','Segoe UI';display:block;margin-bottom:6px}
+  .label p{margin:0;color:var(--sub);font-size:13px;line-height:1.45}
+  .step{flex:1;min-width:0}
+  .step .t{font-weight:600;margin:0 0 6px;font-size:13px}
+  .step .t i{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--acc);color:#fff;font-style:normal;font-size:11px;margin-right:6px}
+  .note{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.4}
+  .desk{position:relative;height:380px;border-radius:8px;overflow:hidden;background:linear-gradient(160deg,#7aa7d6 0%,#a9c7e6 45%,#d9c39a 46%,#c9a46d 100%)}
+  .win{position:absolute;left:16px;top:16px;width:300px;height:220px;background:#fff;border-radius:6px;opacity:.6}
+  .taskbar{position:absolute;left:0;right:0;bottom:0;height:30px;background:#202020e6}
+  .taskbar:before{content:'';position:absolute;left:10px;top:8px;width:14px;height:14px;border-radius:2px;background:#4aa3ff}
+  .clock{position:absolute;right:8px;bottom:8px;color:#ddd;font-size:10px}
+  .tray{position:absolute;right:52px;bottom:7px;width:16px;height:16px}
+  .gopu{position:absolute;width:46px;height:36px}
+  .bub{position:absolute;background:#fff;border-radius:10px;padding:8px 10px;font-size:12px;box-shadow:0 3px 12px #0003}
+  .bub:after{content:'';position:absolute;right:18px;bottom:-6px;border:6px solid transparent;border-top-color:#fff;border-bottom:0}
+  .tab{position:absolute;right:0;width:26px;height:58px;background:#f9f9f9;border:1px solid #d0d0d0;border-right:0;border-radius:8px 0 0 8px;box-shadow:-2px 2px 8px #0003;display:grid;place-items:center}
+  .tab svg{width:20px;height:20px}
+  .tab.glow{box-shadow:-2px 2px 8px #0003,0 0 0 2px var(--ring)}
+  /* the due note */
+  .card{position:absolute;width:270px;background:#f9f9f9;border:1px solid #dcdcdc;border-radius:8px;box-shadow:0 8px 24px #0003;padding:10px 12px;font-size:12px}
+  .card .top{display:flex;gap:8px;align-items:flex-start}
+  .card .top svg{width:22px;height:22px;flex:none}
+  .card b,.bub b,.add b{display:block;font-size:13px}
+  .card .when{color:var(--sub)}
+  .card .miss{color:#a33}
+  .btns{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+  .b{font-size:11px;padding:4px 10px;border-radius:5px;background:#fff;border:1px solid #cfcfcf}
+  .b.p{background:var(--acc);border-color:var(--acc);color:#fff}
+  .menu{position:absolute;width:130px;background:#fff;border:1px solid #d6d6d6;border-radius:6px;box-shadow:0 6px 18px #0003;font-size:11px;padding:4px 0}
+  .menu div{padding:4px 10px}.menu div.on{background:#f3e2cf}
+  /* the Ask Gopu flyout (look A), answering Prep me */
+  .fly{position:absolute;width:300px;background:#f9f9f9;border:1px solid #dcdcdc;border-radius:8px;box-shadow:0 8px 24px #0003;font-size:12px}
+  .fly .body{padding:8px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+  .fly .q{align-self:flex-end;background:var(--you);border-radius:8px 8px 2px 8px;padding:4px 8px}
+  .fly ul{margin:0;padding-left:14px;line-height:1.45}
+  .fly .src{display:inline-block;font-size:9px;padding:0 4px;border-radius:6px;background:#eee;color:var(--sub);margin-left:2px}
+  .fly .bar{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 10px}
+  .fly .ph{flex:1;color:#8a8a8a}
+  .fly .send{width:22px;height:22px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-size:11px}
+  .fly .add{border:1px solid #e3c9a8;background:#fff;border-radius:6px;padding:7px 9px;line-height:1.5}
+  /* a Windows notification */
+  .toast{position:absolute;right:10px;bottom:40px;width:300px;background:#f3f3f3;border:1px solid #d8d8d8;border-radius:8px;box-shadow:0 8px 24px #0004;font-size:12px;padding:10px 12px}
+  .toast .app{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--sub);margin-bottom:6px}
+  .toast .app svg{width:14px;height:14px}
+  .center{position:absolute;right:0;top:0;bottom:30px;width:320px;background:#ececece8;border-left:1px solid #ccc;padding:10px;font-size:12px}
+  .center .h{font-weight:600;margin-bottom:8px}
+  /* a chat window, for offers from the screen */
+  .chat{position:absolute;left:16px;top:16px;width:360px;height:250px;background:#fff;border-radius:6px;box-shadow:0 4px 14px #0002;font-size:12px}
+  .chat .hd{padding:8px 10px;border-bottom:1px solid var(--line);font-weight:600}
+  .chat .m{margin:8px 10px;max-width:250px;background:#f1f1f1;border-radius:8px;padding:6px 8px}
+  .chat .m.me{margin-left:auto;background:#dbeafe}
+  .chat .m mark{background:#ffe2b8;padding:0 2px;border-radius:3px}
+  .offer{position:absolute;right:30px;width:220px;background:#fff;border:1px solid #e3c9a8;border-radius:8px;box-shadow:0 6px 18px #0003;font-size:12px;padding:8px 10px}
+  /* the Reminders page (Settings, Windows-native look, saffron accent) */
+  .pages{display:flex;gap:24px;margin:0 32px 30px}
+  .pagecol{flex:1}
+  .sw{background:#fff;border:1px solid #d6d6d6;border-radius:8px;box-shadow:0 8px 24px #0002;display:flex;height:620px;overflow:hidden;font-size:13px}
+  .nav{width:170px;background:#f3f3f3;padding:12px 8px;flex:none}
+  .nav div{padding:6px 10px;border-radius:5px;color:#333}
+  .nav .g{font-size:11px;color:var(--sub);padding:12px 10px 4px}
+  .nav .on{background:#e9e9e9;font-weight:600;box-shadow:inset 3px 0 0 var(--ring)}
+  .pg{flex:1;padding:18px 24px;overflow:hidden}
+  .pg h3{font:600 22px 'Segoe UI Variable Display','Segoe UI';margin:0}
+  .pg .s{color:var(--sub);margin:2px 0 14px}
+  .pg h4{font-size:13px;margin:16px 0 6px;color:#333}
+  .it{display:flex;align-items:center;gap:12px;padding:9px 12px;border:1px solid #e6e6e6;border-radius:6px;margin-bottom:6px;background:#fbfbfb}
+  .it .tm{width:64px;font-weight:600}
+  .it .grow{flex:1}
+  .it small{display:block;color:var(--sub);font-size:11px}
+  .tg{width:34px;height:18px;border-radius:9px;background:#ccc;position:relative;flex:none}
+  .tg:after{content:'';position:absolute;left:3px;top:3px;width:12px;height:12px;border-radius:50%;background:#fff}
+  .tg.on{background:var(--acc)}.tg.on:after{left:19px}
+  .more{color:var(--sub);font-size:16px}
+  .form{border:1px solid #e3c9a8;background:#fffaf4;border-radius:6px;padding:10px 12px;margin-bottom:10px;display:grid;grid-template-columns:1fr 110px 80px 120px;gap:8px;align-items:end}
+  .fld{font-size:11px;color:var(--sub)}
+  .fld div{margin-top:3px;border:1px solid #cfcfcf;border-radius:4px;background:#fff;padding:5px 7px;color:var(--text);font-size:12px}
+  .addb{display:inline-block;background:var(--acc);color:#fff;border-radius:5px;padding:5px 12px;font-size:12px}
+  .days{display:flex;gap:3px}.days span{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:10px;background:#eee;color:#555}
+  .days span.on{background:var(--acc);color:#fff}
+  .ck{border:1px solid #e6e6e6;border-radius:6px;padding:10px 12px;margin-bottom:8px;background:#fbfbfb}
+  .ck .r{display:flex;align-items:center;gap:10px}
+  .star{color:var(--acc);font-weight:600}
+  .hint{font-size:11px;color:var(--sub);margin-top:4px;line-height:1.4}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <symbol id="side" viewBox="22 40 200 150">
+    <rect x="64" y="108" width="20" height="32" rx="9" fill="#B2600B" stroke="#2B170A" stroke-width="4"/>
+    <rect x="116" y="108" width="20" height="32" rx="9" fill="#B2600B" stroke="#2B170A" stroke-width="4"/>
+    <path d="M38 92q-12 6-8 20" fill="none" stroke="#2B170A" stroke-width="3.5" stroke-linecap="round"/>
+    <ellipse cx="88" cy="96" rx="52" ry="38" fill="#E8891C" stroke="#2B170A" stroke-width="4"/>
+    <rect x="48" y="112" width="20" height="30" rx="9" fill="#E8891C" stroke="#2B170A" stroke-width="4"/>
+    <rect x="100" y="112" width="20" height="30" rx="9" fill="#E8891C" stroke="#2B170A" stroke-width="4"/>
+    <circle cx="136" cy="70" r="36" fill="#E8891C" stroke="#2B170A" stroke-width="4"/>
+    <path d="M164 80C176 92 178 110 172 124" fill="none" stroke="#2B170A" stroke-width="17" stroke-linecap="round"/>
+    <path d="M164 80C176 92 178 110 172 124" fill="none" stroke="#E8891C" stroke-width="10" stroke-linecap="round"/>
+    <g transform="rotate(-10 122 74)"><ellipse cx="122" cy="74" rx="19" ry="24" fill="#E8891C" stroke="#2B170A" stroke-width="4"/>
+      <ellipse cx="120" cy="76" rx="11.4" ry="14.9" fill="#F06A5E" opacity=".5"/></g>
+    <circle cx="152" cy="62" r="4.5" fill="#2B170A"/><circle cx="150.5" cy="60.4" r="1.6" fill="#fff"/>
+    <ellipse cx="156" cy="84" rx="7" ry="4.5" fill="#F06A5E" opacity=".75"/>
+  </symbol>
+  <symbol id="head" viewBox="0 0 64 64">
+    <path d="M20 18C10 12 1 18 2 30c1 10 9 14 18 10Z" fill="#E8891C" stroke="#2B170A" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M44 18c10-6 19 0 18 12-1 10-9 14-18 10Z" fill="#E8891C" stroke="#2B170A" stroke-width="3.5" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="17" fill="#E8891C" stroke="#2B170A" stroke-width="3.5"/>
+    <circle cx="25" cy="26" r="2.6" fill="#2B170A"/><circle cx="39" cy="26" r="2.6" fill="#2B170A"/>
+    <path d="M32 32C32 42 31 50 37 53c4 2 8-1 7-5" fill="none" stroke="#2B170A" stroke-width="10" stroke-linecap="round"/>
+    <path d="M32 32C32 42 31 50 37 53c4 2 8-1 7-5" fill="none" stroke="#E8891C" stroke-width="4" stroke-linecap="round"/>
+  </symbol>
+</defs></svg>
+
+<h1>Reminders: how they look</h1>
+<p class="lede">One example throughout: a one-off reminder, "Call with Anna (Acme)", today at 5:00 PM, shown 10 minutes early. A due note
+costs nothing; only <b>Prep me</b> calls the model, and only when clicked. Nothing here is decided yet: pick one look for the note
+and one for the page.</p>
+
+<h2>1 · The due note</h2>
+
+<div class="row">
+  <div class="label"><b>A · From the tab</b><p>The note slides out of the edge tab, where Ask Gopu already lives (the default
+    anchor). With the taskbar anchor, it opens above Gopu's tray icon instead. Same card style as the Ask box.</p></div>
+  <div class="step"><div class="t"><i>1</i>10 minutes before</div>
+    <div class="desk"><div class="win"></div>
+      <div class="tab glow" style="top:150px"><svg><use href="#head"/></svg></div>
+      <div class="card" style="right:34px;top:126px"><div class="top"><svg><use href="#head"/></svg><div>
+        <b>Call with Anna (Acme)</b><span class="when">5:00 PM · in 10 min</span></div></div>
+        <div class="btns"><span class="b p">Prep me</span><span class="b">Snooze ▾</span><span class="b">Done</span></div></div>
+      <div class="taskbar"></div><div class="clock">4:50 PM</div></div>
+    <div class="note">Doesn't take the keyboard. Unanswered, it folds back into the tab, which keeps glowing until Done.</div></div>
+  <div class="step"><div class="t"><i>2</i>Prep me</div>
+    <div class="desk"><div class="win"></div>
+      <div class="tab" style="top:150px"><svg><use href="#head"/></svg></div>
+      <div class="fly" style="right:34px;top:40px"><div class="body"><span class="q">Prep: Call with Anna (Acme)</span>
+        <div><b>Before the call</b><ul>
+          <li>Last from Anna (yesterday): needs the November invoice by Friday <span class="src">1</span></li>
+          <li>Open: you said you'd send the revised quote <span class="src">2</span></li>
+          <li>She mentioned the launch moved to Thursday <span class="src">3</span></li></ul></div>
+        <div style="color:var(--sub);font-size:11px">From 3 windows and Anna's page · 1 model call</div></div>
+        <div class="bar"><span class="ph">Ask a follow-up…</span><span class="send">↑</span></div></div>
+      <div class="taskbar"></div><div class="clock">4:51 PM</div></div>
+    <div class="note">The note turns into the Ask box with a prep answer; each line links to the capture it came from.</div></div>
+  <div class="step"><div class="t"><i>3</i>Missed (the PC was asleep)</div>
+    <div class="desk"><div class="win"></div>
+      <div class="tab glow" style="top:150px"><svg><use href="#head"/></svg></div>
+      <div class="card" style="right:34px;top:126px"><div class="top"><svg><use href="#head"/></svg><div>
+        <b>Call with Anna (Acme)</b><span class="miss">Missed · was 5:00 PM</span></div></div>
+        <div class="btns"><span class="b">Remind in 1 h</span><span class="b">Done</span></div></div>
+      <div class="taskbar"></div><div class="clock">5:40 PM</div></div>
+    <div class="note">Shown once on wake, marked "missed", never silently dropped.</div></div>
+</div>
+
+<div class="row">
+  <div class="label"><b>B · Gopu walks out</b><p>Gopu steps onto the taskbar by the clock and says it in his bubble, the same
+    bubble as every Gopu-key tap. The most "Gopu"; the bubble is small for three buttons.</p></div>
+  <div class="step"><div class="t"><i>1</i>10 minutes before</div>
+    <div class="desk"><div class="win"></div>
+      <svg class="gopu" style="right:70px;bottom:28px"><use href="#side"/></svg>
+      <div class="bub" style="right:40px;bottom:72px;width:200px"><b>Call with Anna (Acme)</b><span style="color:var(--sub)">5:00 PM · in 10 min</span>
+        <div class="btns"><span class="b p">Prep me</span><span class="b">Snooze ▾</span><span class="b">Done</span></div></div>
+      <div class="taskbar"></div><div class="clock">4:50 PM</div></div>
+    <div class="note">He waits there, idle, until answered; a click on him reopens the bubble.</div></div>
+  <div class="step"><div class="t"><i>2</i>Prep me</div>
+    <div class="desk"><div class="win"></div>
+      <svg class="gopu" style="right:70px;bottom:28px"><use href="#side"/></svg>
+      <div class="fly" style="right:20px;top:24px"><div class="body"><span class="q">Prep: Call with Anna (Acme)</span>
+        <div><b>Before the call</b><ul>
+          <li>Needs the November invoice by Friday <span class="src">1</span></li>
+          <li>Open: the revised quote <span class="src">2</span></li></ul></div></div>
+        <div class="bar"><span class="ph">Ask a follow-up…</span><span class="send">↑</span></div></div>
+      <div class="taskbar"></div><div class="clock">4:51 PM</div></div>
+    <div class="note">The Ask box opens above him, as with the taskbar anchor.</div></div>
+  <div class="step"><div class="t"><i>3</i>Snooze</div>
+    <div class="desk"><div class="win"></div>
+      <svg class="gopu" style="right:70px;bottom:28px"><use href="#side"/></svg>
+      <div class="bub" style="right:40px;bottom:72px;width:200px"><b>Call with Anna (Acme)</b><span style="color:var(--sub)">5:00 PM · in 10 min</span>
+        <div class="btns"><span class="b p">Prep me</span><span class="b" style="border-color:var(--ring)">Snooze ▾</span><span class="b">Done</span></div></div>
+      <div class="menu" style="right:76px;bottom:190px"><div>5 minutes</div><div class="on">Until it starts</div><div>30 minutes</div><div>1 hour</div><div>Tomorrow 9 AM</div></div>
+      <div class="taskbar"></div><div class="clock">4:50 PM</div></div>
+    <div class="note">"Until it starts" brings it back at 5:00 PM sharp. The same menu in every look.</div></div>
+</div>
+
+<div class="row">
+  <div class="label"><b>C · A Windows notification</b><p>A normal Windows toast, with Gopu's buttons. The most familiar, shows over
+    full-screen apps, and lands in the notification centre if missed. Plain: nothing of Gopu but the icon.</p></div>
+  <div class="step"><div class="t"><i>1</i>10 minutes before</div>
+    <div class="desk"><div class="win"></div>
+      <div class="toast"><div class="app"><svg><use href="#head"/></svg>Gopu</div><b style="font-size:13px">Call with Anna (Acme)</b>
+        <div style="color:var(--sub)">5:00 PM · in 10 min</div>
+        <div class="btns"><span class="b p">Prep me</span><span class="b">Snooze</span><span class="b">Done</span></div></div>
+      <div class="taskbar"></div><svg class="tray"><use href="#head"/></svg><div class="clock">4:50 PM</div></div>
+    <div class="note">Windows decides how long it stays (about 5 s) and mutes it in Focus mode.</div></div>
+  <div class="step"><div class="t"><i>2</i>Prep me</div>
+    <div class="desk"><div class="win"></div>
+      <div class="fly" style="right:12px;bottom:40px"><div class="body"><span class="q">Prep: Call with Anna (Acme)</span>
+        <div><b>Before the call</b><ul>
+          <li>Needs the November invoice by Friday <span class="src">1</span></li>
+          <li>Open: the revised quote <span class="src">2</span></li></ul></div></div>
+        <div class="bar"><span class="ph">Ask a follow-up…</span><span class="send">↑</span></div></div>
+      <div class="taskbar"></div><svg class="tray"><use href="#head"/></svg><div class="clock">4:51 PM</div></div>
+    <div class="note">The toast's button opens the Ask box by the clock.</div></div>
+  <div class="step"><div class="t"><i>3</i>Missed</div>
+    <div class="desk"><div class="win"></div>
+      <div class="center"><div class="h">Notifications</div>
+        <div class="toast" style="position:static;width:auto"><div class="app"><svg><use href="#head"/></svg>Gopu · 5:00 PM</div>
+          <b>Call with Anna (Acme)</b><div class="btns"><span class="b p">Prep me</span><span class="b">Done</span></div></div></div>
+      <div class="taskbar"></div><svg class="tray"><use href="#head"/></svg><div class="clock">5:40 PM</div></div>
+    <div class="note">Missed ones wait in the notification centre with the others.</div></div>
+</div>
+
+<h2>2 · The Reminders page (Settings)</h2>
+<p class="lede">Both pages hold the same things: one-off reminders, check-ins (a saved ask on a schedule; the end-of-day report is the
+first one), and the switch for offers from the screen.</p>
+<div class="pages">
+  <div class="pagecol"><div class="step"><div class="t">A · One list, by day</div></div>
+    <div class="sw"><div class="nav"><div>Model</div><div>You</div><div>Gopu key</div><div class="g">Memory</div><div>Search</div><div>People</div><div>Style</div>
+      <div class="on">Reminders</div><div>Privacy</div><div class="g"></div><div>About</div></div>
+      <div class="pg"><h3>Reminders</h3><div class="s">Notes Gopu shows at a time you pick. Nothing is read or sent until you click one.</div>
+        <div class="form"><div class="fld">What<div>Call with Anna (Acme)</div></div><div class="fld">When<div>Today 5:00 PM</div></div>
+          <div class="fld">Show earlier<div>10 min ▾</div></div><div class="fld">Repeat<div>Never ▾</div></div>
+          <div style="grid-column:1/-1;display:flex;gap:8px;align-items:center"><span class="addb">Add reminder</span><span class="hint" style="margin:0">or type "remind me…" in the Ask box</span></div></div>
+        <h4>Today</h4>
+        <div class="it"><span class="tm">5:00 PM</span><span class="grow">Call with Anna (Acme)<small>10 min before · once</small></span><span class="more">⋯</span></div>
+        <div class="it"><span class="tm">6:00 PM</span><span class="grow"><span class="star">★ Daily report</span><small>Weekdays · check-in</small></span><span class="tg on"></span><span class="more">⋯</span></div>
+        <h4>Tomorrow</h4>
+        <div class="it"><span class="tm">9:00 AM</span><span class="grow"><span class="star">★ What's unfinished?</span><small>Mondays · check-in</small></span><span class="tg on"></span><span class="more">⋯</span></div>
+        <div class="it"><span class="tm">11:30 AM</span><span class="grow">Send the revised quote<small>From a chat with Anna · once</small></span><span class="more">⋯</span></div>
+        <h4>Offers from the screen</h4>
+        <div class="it"><span class="grow">Offer a reminder when I read or write a plan with a time<small>"Call at 5 PM", "send it by Friday". Spotted on this PC, never added without a click.</small></span><span class="tg on"></span></div>
+      </div></div>
+    <div class="note">Everything in time order, check-ins mixed in where they fall. Simple; check-ins are harder to find as the list grows.</div></div>
+
+  <div class="pagecol"><div class="step"><div class="t">B · Two parts: reminders, then check-ins</div></div>
+    <div class="sw"><div class="nav"><div>Model</div><div>You</div><div>Gopu key</div><div class="g">Memory</div><div>Search</div><div>People</div><div>Style</div>
+      <div class="on">Reminders</div><div>Privacy</div><div class="g"></div><div>About</div></div>
+      <div class="pg"><h3>Reminders</h3><div class="s">Notes Gopu shows at a time you pick. Nothing is read or sent until you click one.</div>
+        <h4 style="display:flex;justify-content:space-between;align-items:center">One-off <span class="addb">+ New reminder</span></h4>
+        <div class="it"><span class="tm">5:00 PM</span><span class="grow">Call with Anna (Acme)<small>Today · 10 min before</small></span><span class="more">⋯</span></div>
+        <div class="it"><span class="tm">11:30 AM</span><span class="grow">Send the revised quote<small>Tomorrow · from a chat with Anna</small></span><span class="more">⋯</span></div>
+        <h4 style="display:flex;justify-content:space-between;align-items:center">Check-ins <span class="addb">+ New check-in</span></h4>
+        <div class="ck"><div class="r"><span class="star" style="flex:1">★ Daily report</span><span class="days"><span class="on">M</span><span class="on">T</span><span class="on">W</span><span class="on">T</span><span class="on">F</span><span>S</span><span>S</span></span><span class="tm" style="width:auto">6:00 PM</span><span class="tg on"></span></div>
+          <div class="hint">Skipped on days with nothing in memory.</div></div>
+        <div class="ck"><div class="r"><span class="star" style="flex:1">★ What's unfinished?</span><span class="days"><span class="on">M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></span><span class="tm" style="width:auto">9:00 AM</span><span class="tg on"></span></div></div>
+        <h4>Offers from the screen</h4>
+        <div class="it"><span class="grow">Offer a reminder when I read or write a plan with a time<small>Spotted on this PC, never added without a click.</small></span><span class="tg on"></span></div>
+      </div></div>
+    <div class="note">Check-ins get their own cards with day buttons, so a weekly one is easy to set. A bit more to read.</div></div>
+</div>
+
+<h2>3 · Adding one without opening Settings</h2>
+<div class="row">
+  <div class="label"><b>Both, whichever look</b><p>From the Ask box (one model call reads the time), or an offer when Gopu spots a
+    plan with a time on screen (spotted locally, no model call). Neither is saved until you click.</p></div>
+  <div class="step"><div class="t"><i>1</i>"remind me…" in the Ask box</div>
+    <div class="desk"><div class="win"></div>
+      <div class="tab" style="top:150px"><svg><use href="#head"/></svg></div>
+      <div class="fly" style="right:34px;top:60px"><div class="body"><span class="q">remind me call with anna at 5, 10 min early</span>
+        <div class="add"><b>Call with Anna</b>Today · 5:00 PM · shown at 4:50 PM
+          <div class="btns" style="margin-top:6px"><span class="b p">Add</span><span class="b">Change</span></div></div></div>
+        <div class="bar"><span class="ph">Ask a follow-up…</span><span class="send">↑</span></div></div>
+      <div class="taskbar"></div><div class="clock">2:14 PM</div></div>
+    <div class="note">Shown for a check before it's saved; "Change" opens the form with it filled in.</div></div>
+  <div class="step"><div class="t"><i>2</i>An offer from the screen</div>
+    <div class="desk">
+      <div class="chat"><div class="hd">Anna Kowalski</div>
+        <div class="m">Thanks for the update! Can we do a quick call <mark>today at 5 pm</mark>?</div>
+        <div class="m me">Sure, 5 works</div></div>
+      <div class="tab glow" style="top:150px"><svg><use href="#head"/></svg></div>
+      <div class="offer" style="top:146px"><b>Remind you?</b> Call with Anna · today 5:00 PM
+        <div class="btns" style="margin-top:6px"><span class="b p">Add</span><span class="b">Not now</span></div></div>
+      <div class="taskbar"></div><div class="clock">2:16 PM</div></div>
+    <div class="note">Offered once, after you agreed to the time; it fades after 15 s if ignored. Off in Settings → Reminders.</div></div>
+  <div class="step"></div>
+</div>
+</body></html>
