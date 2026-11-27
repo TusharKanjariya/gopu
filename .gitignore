@@ -1,0 +1,11 @@
+_re/
+_snapshot/
+__pycache__/
+key.txt
+.claude-account
+*.db
+*.db-*
+target/
+.no-commit
+.scratch/
+*.mp4

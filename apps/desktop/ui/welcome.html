@@ -1,0 +1,261 @@
+<!doctype html>
+<!-- The welcome flow (settings-v1 ticket 08): Gopu stands on the taskbar and talks in his bubble.
+     1 demo → 2 name → 3 about you → 4 connect a model → 5 try it for real. Mockup: prototype/onboarding-flow.png. -->
+<html lang="en"><head><meta charset="utf-8"><title>Welcome to Gopu</title><style>
+  html,body{margin:0;height:100%;background:transparent;overflow:hidden;font:13px 'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif;color:#2B170A}
+  #gopu{position:absolute;right:26px;bottom:0;width:62px;transform-origin:50% 100%}
+  #gopu.walk .near,#gopu.walk .far{transform-box:fill-box;animation:step .26s infinite}#gopu.walk .far{animation-delay:.13s}
+  #gopu.hop{animation:hop .5s cubic-bezier(.3,1.6,.5,1) 2}
+  @keyframes step{50%{transform:translateY(-6px)}}
+  @keyframes hop{0%,100%{transform:none}40%{transform:translateY(-14px) scaleY(1.05)}}
+  .bub{position:absolute;right:66px;bottom:58px;width:340px;box-sizing:border-box;background:#fff;border:1px solid #e6d5bf;border-radius:12px 12px 3px 12px;
+    box-shadow:0 6px 22px #0002;padding:13px 15px;line-height:1.4;animation:pop .22s cubic-bezier(.25,1.4,.45,1)}
+  @keyframes pop{from{opacity:0;transform:translateY(6px) scale(.95)}}
+  .bub p{margin:0 0 8px}.bub>p:first-of-type{padding-right:16px}.bub b{color:#B2600B}
+  .x{position:absolute;right:6px;top:4px;border:0;background:none;color:#8a6c55;font-size:15px;line-height:1;padding:4px;cursor:pointer;border-radius:4px}
+  .key{display:inline-block;white-space:nowrap;border:1px solid #c9b8a5;border-bottom-width:3px;border-radius:5px;padding:0 6px;font-size:12px;font-weight:600;background:#FFF3E3}
+  .demo{border:1.5px solid #cfcfcf;border-radius:6px;padding:7px 10px;margin:4px 0 8px;min-height:18px;background:#fff;color:#222}
+  .demo.busy{border-color:#E8891C}
+  input,textarea{width:100%;box-sizing:border-box;font:inherit;color:#1b1b1b;background:#fff;border:1px solid #d1d1d1;border-bottom:2px solid #E8891C;
+    border-radius:4px;padding:6px 9px;margin:2px 0 6px;outline:0}
+  textarea{height:70px;resize:none}
+  input:focus,textarea:focus{border-color:#B2600B}
+  .fine{font-size:11px;color:#8a6c55;margin:0 0 8px}
+  .acts{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+  .acts .left{margin-right:auto;font-size:11.5px}
+  .acts button{white-space:nowrap}
+  .line{font-size:11.5px;margin:-2px 0 8px;min-height:15px}
+  button.b{font:inherit;font-weight:600;border:0;border-radius:4px;padding:5px 14px;background:#B2600B;color:#fff;cursor:pointer}
+  button.s{font:inherit;border:1px solid #d1d1d1;border-radius:4px;padding:5px 12px;background:#fff;color:#333;cursor:pointer}
+  button:disabled{opacity:.55;cursor:default}
+  button:focus-visible,.chip:focus-visible,a:focus-visible{outline:2px solid #E8891C;outline-offset:2px}
+  a{color:#B2600B;cursor:pointer}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 8px}
+  .chip{font:inherit;font-size:11.5px;border:1px solid #e6d5bf;border-radius:12px;padding:2px 9px;background:#fff;color:#2B170A;cursor:pointer}
+  .chip[aria-pressed=true]{border:1.5px solid #E8891C;background:#FFF3E3;font-weight:600}
+  #msg{font-size:11.5px}#msg.ok{color:#107c10}#msg.bad{color:#c42b1c}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style></head><body>
+<div id="bub" class="bub" role="dialog" aria-live="polite"></div>
+<div id="gopu"></div>
+<script>
+const invoke = window.__TAURI__.core.invoke;
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// ---- Gopu: the side-view art from ui/overlay.html, standing, trunk hanging
+const C = { m: '#E8891C', dk: '#B2600B', o: '#2B170A', lt: '#FFD29A', ck: '#F06A5E' };
+const ear = (cx, cy, rx, ry) => `<g transform="rotate(-10 ${cx} ${cy})"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${C.m}" stroke="${C.o}" stroke-width="4"/><ellipse cx="${cx - 2}" cy="${cy + 2}" rx="${rx * .6}" ry="${ry * .62}" fill="${C.ck}" opacity=".5"/></g>`;
+const leg = (x, y, h, f) => `<rect x="${x}" y="${y}" width="20" height="${h}" rx="9" fill="${f}" stroke="${C.o}" stroke-width="4"/><path d="M${x + 5} ${y + h - 6}h10" stroke="${C.lt}" stroke-width="2.5" stroke-linecap="round"/>`;
+const trunk = 'M164 84C176 92 176 118 172 132'; // hangs to just above the ground
+$('gopu').innerHTML = `<svg viewBox="0 -20 210 164" width="62" style="display:block;overflow:visible" aria-hidden="true">
+  <g class="far">${leg(64, 108, 32, C.dk)}${leg(116, 108, 32, C.dk)}</g>
+  <path d="M38 92q-12 6-8 20" fill="none" stroke="${C.o}" stroke-width="3.5" stroke-linecap="round"/>
+  <ellipse cx="88" cy="96" rx="52" ry="38" fill="${C.m}" stroke="${C.o}" stroke-width="4"/>
+  <g class="near">${leg(48, 112, 30, C.m)}${leg(100, 112, 30, C.m)}</g>
+  <path d="${trunk}" fill="none" stroke="${C.o}" stroke-width="17" stroke-linecap="round"/><path d="${trunk}" fill="none" stroke="${C.m}" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="136" cy="70" r="36" fill="${C.m}" stroke="${C.o}" stroke-width="4"/>${ear(122, 74, 19, 24)}
+  <circle cx="152" cy="62" r="4.5" fill="${C.o}"/><circle cx="150.5" cy="60.4" r="1.6" fill="#fff"/>
+  <ellipse cx="156" cy="84" rx="7" ry="4.5" fill="${C.ck}" opacity=".75"/><path d="M155 94q5 4 10 0" fill="none" stroke="${C.o}" stroke-width="2.5" stroke-linecap="round"/></svg>`;
+const hop = () => { $('gopu').classList.remove('hop'); void $('gopu').offsetWidth; $('gopu').classList.add('hop'); };
+
+// ---- settings, through the same commands as the settings window
+let data, keyName = 'Right Ctrl';
+async function load() {
+  data = await invoke('settings_get');
+  keyName = (data.keys.find(k => k.vk === data.saved.key) || data.keys[0]).name;
+}
+async function save(change, key = null) {
+  await load();
+  await invoke('settings_save', { saved: { ...data.saved, ...change }, key });
+}
+const PRIVATE = 'This stays on this computer. Gopu only uses it as context when writing for you, and it never comes to us.';
+
+// ---- the bubble
+function say(html) {
+  const b = $('bub');
+  b.style.animation = 'none'; void b.offsetWidth; b.style.animation = '';
+  b.innerHTML = `<button class="x" id="x" title="Close (Gopu will ask again next time)" aria-label="Close">×</button>${html}`;
+  $('x').onclick = () => invoke('welcome_done', { finished: false });
+  const first = b.querySelector('input,textarea,button.b');
+  if (first) first.focus();
+}
+const status = (text, kind = '') => { $('msg').textContent = text; $('msg').className = kind; };
+
+// 1 · a scripted demo, played by the real Gopu key (main.rs sends keyTapped while this window has focus)
+let step = 0;
+function demo() {
+  step = 1;
+  say(`<p>Hi, I'm <b>Gopu</b>! I help in any text box. Click in this one, tap <span class="key">${esc(keyName)}</span> and watch me tidy it:</p>
+    <input class="demo" id="demo" value="ya i'll send it tmrw" aria-label="Practice text box" spellcheck="false">
+    <div class="acts"><a class="left" id="showMe" tabindex="0">Show me without the key</a><button class="b" id="next" disabled>Next</button></div>`);
+  $('showMe').onclick = play;
+  $('next').onclick = name;
+  const d = $('demo');
+  d.setSelectionRange(d.value.length, d.value.length);
+}
+// the page hears the Gopu key itself too, in case the app-side check misses (main.rs also calls keyTapped)
+const CODES = { 0xA3: 'ControlRight', 0xA2: 'ControlLeft', 0xA1: 'ShiftRight', 0xA0: 'ShiftLeft' };
+let down = null;
+addEventListener('keydown', e => { down = e.code === CODES[data?.saved.key ?? 0xA3] && down !== false ? e.code : false; });
+addEventListener('keyup', e => { if (down && e.code === down) welcome.keyTapped(); down = null; });
+async function play() {
+  if (step !== 1 || $('demo').classList.contains('busy')) return;
+  const d = $('demo'), words = "Yes, I'll send it tomorrow.".split(' ');
+  d.classList.add('busy'); d.readOnly = true; $('gopu').classList.add('walk');
+  d.value = '';
+  await sleep(500);
+  for (const w of words) { d.value += (d.value ? ' ' : '') + w; await sleep(170); }
+  d.readOnly = false;
+  $('gopu').classList.remove('walk'); d.classList.remove('busy'); hop();
+  $('showMe').outerHTML = '<span class="left">One tap, anywhere you type.</span>';
+  $('next').disabled = false; $('next').focus();
+}
+
+// 2 · name
+function name() {
+  step = 2;
+  say(`<p>What's your name, as it shows in chats? Then I never mix up who said what.</p>
+    <input id="name" value="${esc(data.saved.user_name || '')}" placeholder="Your name" aria-label="Your name">
+    <p class="fine">${PRIVATE}</p>
+    <div class="acts"><span id="msg" class="left"></span><button class="b" id="next">Next</button></div>`);
+  const go = async () => {
+    const v = $('name').value.trim();
+    if (!v) return status('Your name helps me a lot. Please add it.', 'bad');
+    await save({ user_name: v });
+    about();
+  };
+  $('next').onclick = go;
+  $('name').onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+
+// 3 · about you (optional)
+function about() {
+  step = 3;
+  say(`<p>Tell me a little about you: your work, who you usually write to.</p>
+    <textarea id="about" maxlength="2000" placeholder="I'm a developer at a small agency. I mostly write to clients and my team.">${esc(data.saved.about || '')}</textarea>
+    <p class="fine">${PRIVATE}</p>
+    <div class="acts"><button class="s" id="skip">Skip</button><button class="b" id="next">Next</button></div>`);
+  $('skip').onclick = () => memory();
+  $('next').onclick = async () => { await save({ about: $('about').value.trim() || null }); memory(); };
+}
+
+// 3b · memory: on by default; this says so once, with an easy way out (memory-v1.1 tickets 03 and 06)
+function memory() {
+  step = 3;
+  say(`<p>I also remember what's on your screen, so my replies fit what you're doing.</p>
+    <p><b>Everything I remember stays on this PC.</b> Gopu never sends it anywhere for its own use. When you tap me, only the bit I need goes to the model you connected.</p>
+    <p class="fine">I never read passwords or banking pages, and I never keep card numbers, keys or ID numbers.</p>
+    <div class="acts"><button class="s" id="no">Not now</button><button class="b" id="yes">Sounds good</button></div>`);
+  const pick = on => async () => {
+    try { await invoke('memory_set', { on, pause: null, keepDays: null }); } catch (e) { console.warn(e); }
+    model();
+  };
+  $('yes').onclick = pick(true);
+  $('no').onclick = pick(false);
+}
+
+// 4 · connect a model: always shown (a saved key shows as connected), skippable
+let pick = 'groq';
+async function model() {
+  await load();
+  const r = data.saved.provider || 'groq', p = data.providers.find(x => x.id === r);
+  step = 4;
+  pick = ['groq', 'openai', 'anthropic', 'openrouter', 'ollama'].includes(r) ? r : 'groq';
+  const chips = ['groq', 'openai', 'anthropic', 'openrouter', 'ollama'].map(id => {
+    const x = data.providers.find(p => p.id === id);
+    const label = { groq: 'Groq · free', ollama: 'Ollama · local' }[id] || x.name;
+    return `<button class="chip" data-id="${id}" aria-pressed="${id === pick}">${label}</button>`;
+  }).join('') + '<button class="chip" data-id="more" aria-pressed="false">More…</button>';
+  say(`<p>Last thing: connect a model, so I have something to write with.<br><span class="fine">Without one I can't write anything. You can also do this later in Settings.</span></p>
+    <div class="chips" role="group" aria-label="Provider">${chips}</div>
+    <div id="keyRow"><input id="key" type="password" autocomplete="off" spellcheck="false" aria-label="API key"></div>
+    <p class="fine" id="keyNote"></p>
+    <div class="line"><span id="msg"></span> <a id="getKey" tabindex="0">Get a free key</a></div>
+    <div class="acts"><button class="s" id="skip">Skip for now</button><button class="b" id="connect">Connect</button></div>`);
+  document.querySelectorAll('.chip').forEach(c => c.onclick = () => choose(c.dataset.id));
+  $('getKey').onclick = () => invoke('open_link', { which: 'groq-keys' });
+  $('connect').onclick = connect;
+  $('skip').onclick = () => tryIt(false);
+  $('key').onkeydown = e => { if (e.key === 'Enter') connect(); };
+  choose(pick);
+}
+function choose(id) {
+  if (id === 'more') {
+    invoke('show_settings');
+    status('Set it up in Settings → Model and save, then press Check.', '');
+    $('connect').textContent = 'Check';
+    pick = 'more';
+  } else {
+    pick = id;
+    const p = data.providers.find(x => x.id === id);
+    $('connect').textContent = p.has_key ? 'Continue' : 'Connect';
+    $('keyRow').hidden = !p.needs_key;
+    $('key').value = '';
+    $('key').placeholder = p.has_key ? `Saved. Paste a new ${p.name} key to replace it.` : `Paste your ${p.name} key`;
+    $('getKey').hidden = id !== 'groq' || p.has_key;
+    $('keyNote').textContent = p.needs_key
+      ? `Your key stays in Windows Credential Manager and goes only to ${p.name}.`
+      : 'Ollama runs on this computer. Start it, then press Connect.';
+    status(p.has_key ? `Your ${p.name} key is already saved.` : '', p.has_key ? 'ok' : '');
+  }
+  document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.id === id));
+}
+async function connect() {
+  await load();
+  let saved, key = null;
+  if (pick === 'more') {
+    saved = data.saved; // what the settings window saved
+  } else {
+    const p = data.providers.find(x => x.id === pick);
+    key = $('key').value.trim() || null;
+    if (p.needs_key && !key && !p.has_key) return status(`Paste your ${p.name} key first.`, 'bad');
+    const same = pick === (data.saved.provider || 'groq'); // keep a model the user chose for this provider
+    saved = { ...data.saved, provider: pick, model: (same && data.saved.model) || p.model, base_url: null };
+  }
+  $('connect').disabled = true;
+  status('Checking…');
+  try {
+    const ms = await invoke('settings_test', { saved, key });
+    if (pick !== 'more') await invoke('settings_save', { saved, key });
+    status(`Connected (${ms} ms)`, 'ok');
+    hop();
+    await sleep(900);
+    tryIt();
+  } catch (e) {
+    status(`That didn't work: ${e}`, 'bad');
+    $('connect').disabled = false;
+  }
+}
+
+// 5 · try it for real; main.rs calls didIt() when the first real tap lands. Skipped the model: say how to add one.
+function tryIt(connected = true) {
+  step = connected ? 5 : 6;
+  say(connected
+    ? `<p>All set! Open any chat, click in the reply box and tap <span class="key">${esc(keyName)}</span>. I'll come along!</p>
+      <div class="acts"><button class="s" id="later">I'll try it later</button></div>`
+    : `<p>Okay! I can't write until a model is connected, so I'll ask again next time you start me.
+      You can add one any time: tray icon → <b>Settings…</b> → Model.</p>
+      <div class="acts"><button class="b" id="later">Got it</button></div>`);
+  $('later').onclick = () => invoke('welcome_done', { finished: true });
+}
+
+window.welcome = {
+  keyTapped() { if (step === 1) play(); },
+  async didIt() {
+    if (step !== 5) return;
+    step = 6;
+    say('<p><b>You did it!</b> That\'s all there is to it. I\'ll be in the tray.</p>');
+    hop();
+    await sleep(2600);
+    invoke('welcome_done', { finished: true });
+  },
+};
+
+load().then(async () => {
+  if (data.saved.onboarded) model(); // back only because no model is connected
+  else demo();
+});
+</script>
+</body></html>

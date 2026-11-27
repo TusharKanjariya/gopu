@@ -1,0 +1,66 @@
+{
+  "productName": "Gopu",
+  "identifier": "app.gopu.desktop",
+  "build": {
+    "frontendDist": "ui"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "overlay",
+        "url": "overlay.html",
+        "width": 260,
+        "height": 130,
+        "transparent": true,
+        "decorations": false,
+        "shadow": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": false,
+        "focus": false,
+        "focusable": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "icon": [
+      "icons/icon.ico",
+      "icons/icon.png"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "installerHooks": "./installer-hooks.nsh",
+        "customLanguageFiles": {
+          "English": "./installer-english.nsh"
+        },
+        "minimumWebview2Version": "145.0.3800.47"
+      },
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": false
+      }
+    },
+    "createUpdaterArtifacts": true
+  },
+  "mainBinaryName": "Gopu",
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDgzMTc0MDgzNTU0MjFBQzMKUldUREdrSlZnMEFYZ3hjUW5mQUc2YTZ4R0drUjRmeFFaNGlIMlVGMmw2T014ZVZLbUFoRmR2blQK",
+      "endpoints": [
+        "https://github.com/TusharKanjariya/gopu/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}

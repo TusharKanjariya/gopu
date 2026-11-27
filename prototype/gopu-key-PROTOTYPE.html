@@ -1,0 +1,381 @@
+<!doctype html>
+<!-- PROTOTYPE, throwaway. Question: which original elephant animation should the Gopu key use? (11 concepts, A-K)
+     Switch with ?variant=A..K or the bottom bar. Double-click to open. -->
+<html lang="en"><head><meta charset="utf-8"><title>Gopu key: animation prototype</title>
+<style>
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#ECEEF1;color:#1d1f23;min-height:100vh}
+  .app{width:640px;margin:48px auto 0;background:#fff;border-radius:14px;box-shadow:0 8px 30px #0001;padding:22px 40px 36px}
+  .hdr{display:flex;gap:10px;align-items:center;font-weight:600}.av{width:32px;height:32px;border-radius:50%;background:#7c5cff;color:#fff;display:grid;place-items:center}
+  .msg{margin:18px 0 0 42px;background:#f1f3f6;border-radius:12px;padding:10px 14px;display:inline-block}
+  .wrap{position:relative;width:560px;margin:90px 0 0}
+  #box{position:relative;z-index:1;box-sizing:border-box;width:100%;height:46px;font:15px 'Segoe UI',system-ui,sans-serif;padding:0 16px;border-radius:10px;border:1.5px solid #cfd4db;background:#fff;outline:none}
+  #box:focus{border-color:#3b82f6;box-shadow:0 0 0 3px #3b82f622}
+  textarea#box{height:112px;padding:12px 16px;line-height:22px;resize:none;display:block}
+  .ctrl{margin-top:22px;display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;font-size:13px;color:#555}
+  .wrap.has-status+.ctrl{margin-top:58px}
+  .ctrl .sm{background:#f1f3f6;color:#333;font-weight:600;padding:6px 10px}.ctrl .sm.on{background:#1d1f23;color:#fff}
+  .ctrl select{font:13px inherit;padding:4px}
+  .ctrl button{font:600 13px inherit;border:0;border-radius:8px;padding:8px 14px;background:#E8891C;color:#fff;cursor:pointer}
+  .about{font-size:13px;color:#555;line-height:1.5;margin-top:14px;max-width:560px}
+  #state{position:fixed;top:12px;right:12px;font:12px ui-monospace,monospace;background:#1d1f23;color:#cfe;padding:10px 12px;border-radius:8px;white-space:pre}
+  .bar{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#111;color:#fff;border-radius:999px;display:flex;align-items:center;gap:6px;padding:6px;box-shadow:0 6px 20px #0004;font-size:14px;z-index:9}
+  .bar button{background:#333;color:#fff;border:0;border-radius:999px;width:32px;height:32px;cursor:pointer;font-size:16px}#label{padding:0 12px;min-width:170px;text-align:center}#pills{display:flex;gap:4px}
+  .fx{position:absolute;pointer-events:none;z-index:5;font-weight:700;line-height:1}
+  svg .ear{transform-box:fill-box;transform-origin:70% 10%;transition:transform .3s}
+  svg .eye{transform-box:fill-box;transform-origin:50% 50%;animation:blink 4.2s infinite}
+  svg .trunk{transform-box:fill-box;transform-origin:0% 85%}
+  @keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+  @keyframes flap{50%{transform:rotate(-22deg)}}
+  @keyframes wiggle{50%{transform:rotate(-12deg)}}
+  @keyframes step{50%{transform:translateY(-6px)}}
+  @keyframes hop{40%{transform:translateY(-14px) rotate(-4deg)}}
+  @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  @keyframes bob{50%{transform:translateY(-3px)}}
+  .thinking svg .ear{animation:flap .22s infinite}
+  .error svg .ear{transform:rotate(32deg)}
+  /* A: perch & tightrope */
+  .mA{position:absolute;z-index:2;transition:left .1s linear,opacity .25s,transform .45s cubic-bezier(.3,1.7,.5,1)}
+  .mA.idle{opacity:0;transform:translateY(-50px)}
+  .mA .tdown{display:none}.mA.writing .tdown{display:inline}.mA.writing .tup{display:none}
+  .mA.writing .near{animation:step .26s infinite}.mA.writing .far{animation:step .26s infinite .13s}
+  .mA.writing .near,.mA.writing .far{transform-box:fill-box}
+  .mA.done svg{animation:hop .45s 2}.mA.error svg{animation:shake .35s 3}.mA.focused svg{animation:bob 2.4s infinite}
+  /* B: peekaboo spray */
+  .mB{position:absolute;z-index:0;transition:top .4s cubic-bezier(.3,1.6,.5,1),left .3s,opacity .25s}
+  .mB.idle{top:14px!important;opacity:0}.mB.focused{top:-24px}.mB.thinking,.mB.writing,.mB.done{top:-52px}.mB.error{top:-16px}
+  .mB.thinking .trunk,.mB.writing .trunk{animation:wiggle .3s infinite}.mB.error svg{animation:shake .3s 3}
+  /* C: stretchy trunk */
+  .mC{position:absolute;z-index:2;overflow:visible;pointer-events:none}
+  .mC .headg{transition:opacity .3s}.mC.idle .headg{opacity:0}
+  .mC.done .headg{animation:hop .45s 2;transform-box:fill-box}
+  /* ---- shared by D-K: compact head (faces the field), overlays ---- */
+  .ov{position:absolute;pointer-events:none;z-index:2}
+  .mini{position:absolute;pointer-events:none;z-index:2;opacity:0;transform:translateY(4px);transition:opacity .2s cubic-bezier(.2,.8,.2,1),transform .2s cubic-bezier(.2,.8,.2,1)}
+  .mini.on{opacity:1;transform:none}
+  svg .hd{transform-box:fill-box;transform-origin:50% 70%;transition:transform .3s ease-in-out}
+  svg .tr{transform-box:fill-box;transform-origin:0% 90%;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+  svg .pupil{transition:transform .2s cubic-bezier(.2,.8,.2,1)}
+  .look-in .pupil{transform:translate(2.2px,1.4px)}.look-up .pupil{transform:translate(.6px,-2.2px)}.look-down .pupil{transform:translate(1.2px,2.4px)}
+  .tilt .hd{transform:rotate(-8deg)}.droop .ear{transform:rotate(16deg)}
+  @keyframes nod{40%{transform:rotate(7deg) translateY(1.5px)}}
+  @keyframes breathe{50%{transform:translateY(-1.5px) rotate(-2deg)}}
+  @keyframes twitch{0%,80%,100%{transform:none}88%{transform:rotate(-6deg)}}
+  @keyframes blink1{50%{transform:scaleY(.1)}}
+  .nod .hd{animation:nod .35s cubic-bezier(.25,1.4,.45,1)}
+  .breathe .hd{animation:breathe 2s ease-in-out infinite}.twitch .ear{animation:twitch 2.2s ease-in-out infinite}
+  .blink1 svg .eye{animation:blink1 .26s}
+  .bar .p{width:26px;height:26px;padding:0;font:600 12px 'Segoe UI',system-ui;background:#2a2a2a;color:#bbb}.bar .p.on{background:#E8891C;color:#fff}
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.05s!important}}
+  /* ---- L-Q: full-body rig + text overlays ---- */
+  .rig{position:absolute;pointer-events:none;z-index:4;transition:opacity .2s}.rig.hide{opacity:0}
+  .rig svg .ck{transform-box:fill-box;transform-origin:center;transition:transform .25s cubic-bezier(.25,1.4,.45,1)}
+  .rig.puff svg .ck{transform:scale(1.7)}.rig.perk .ear{transform:rotate(-14deg)}.rig.droop .ear{transform:rotate(18deg)}
+  .rig.lk-r .pupil{transform:translate(3px,1.5px)}.rig.lk-d .pupil{transform:translate(2px,3.5px)}.rig.lk-u .pupil{transform:translate(1px,-3.5px)}
+  .rig.walk .near,.rig.walk .far{transform-box:fill-box;animation:step .26s infinite}.rig.walk .far{animation-delay:.13s}
+  .rig.shake-ears .ear{animation:flap .12s 4}
+  .trk{position:absolute;left:0;top:0;pointer-events:none;z-index:3}
+  #status{position:absolute;right:0;pointer-events:none;z-index:5;background:#fff;border:1px solid #e3e6ea;border-radius:10px;box-shadow:0 4px 14px #0000000f;
+    padding:6px 10px;font-size:12px;color:#444;max-width:330px;opacity:0;transform:translateY(-4px);transition:opacity .2s cubic-bezier(.2,.8,.2,1),transform .2s cubic-bezier(.2,.8,.2,1)}
+  #status.on{opacity:1;transform:none}#status b{color:#B2600B}#status .ba{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;margin-top:4px;color:#666}
+  #status .ba span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tray{position:fixed;left:16px;bottom:16px;background:#1d1f23;border-radius:10px;padding:6px 10px;color:#aaa;font-size:12px;display:flex;align-items:center;gap:8px}
+</style></head><body>
+<div class="app">
+  <div class="hdr"><div class="av">M</div>Maya · #launch</div>
+  <div class="msg">Hey! Could you review the launch deck today? Need it before Friday 🙏</div>
+  <div class="wrap" id="wrap"><input id="box" placeholder="Message Maya…" autocomplete="off"></div>
+  <div class="ctrl"><button id="key">Gopu key (Right Ctrl)</button>
+    <label><input type="checkbox" id="fail"> make the next press fail</label>
+    <label><input type="checkbox" id="slow"> slow-mo ×4</label>
+    <label><input type="checkbox" id="stat" checked> status panel</label>
+    <label>think <select id="think"><option value="500">0.5s</option><option value="1400" selected>1.4s</option><option value="3000">3s</option></select></label></div>
+  <div class="ctrl" style="margin-top:10px">Field:
+    <button class="sm" id="f1">Single line</button><button class="sm" id="f2">Multi-line</button>
+    &nbsp;Fill:<button class="sm" id="s0">Empty</button><button class="sm" id="s1">Short draft</button><button class="sm" id="s2">Long draft</button><button class="sm" id="s3">Instruction</button><button class="sm" id="s4">Two paragraphs</button></div>
+  <div class="about" id="about"></div>
+  <div class="about"><b>Try:</b> an empty box gives a reply · type a draft like <i>ya ill check it later</i> to polish it · type <i>translate to spanish</i> to run an instruction.</div>
+</div>
+<div class="tray" id="tray"></div>
+<div id="state"></div>
+<div class="bar"><button id="prev">‹</button><span id="pills"></span><button id="next">›</button><span id="label"></span></div>
+<script>
+const C={m:'#E8891C',dk:'#B2600B',o:'#2B170A',lt:'#FFD29A',ck:'#F06A5E'};
+const $=id=>document.getElementById(id), wrap=$('wrap');let box=$('box');
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const tube=(d,w,i)=>`<path d="${d}" fill="none" stroke="${C.o}" stroke-width="${w}" stroke-linecap="round"/><path d="${d}" fill="none" stroke="${C.m}" stroke-width="${i}" stroke-linecap="round"/>`;
+const ear=(cx,cy,rx,ry)=>`<g class="ear"><g transform="rotate(-10 ${cx} ${cy})"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${C.m}" stroke="${C.o}" stroke-width="4"/><ellipse cx="${cx-2}" cy="${cy+2}" rx="${rx*.6}" ry="${ry*.62}" fill="${C.ck}" opacity=".5"/></g></g>`;
+const eye=(x,y,r)=>`<g class="eye"><circle cx="${x}" cy="${y}" r="${r}" fill="${C.o}"/><circle cx="${x-r*.33}" cy="${y-r*.35}" r="${r*.35}" fill="#fff"/></g>`;
+const leg=(x,y,h,f)=>`<rect x="${x}" y="${y}" width="20" height="${h}" rx="9" fill="${f}" stroke="${C.o}" stroke-width="4"/><path d="M${x+5} ${y+h-6}h10" stroke="${C.lt}" stroke-width="2.5" stroke-linecap="round"/>`;
+const T_UP='M48 38C60 42 68 34 66 22C65 16 61 14 58 17';
+const head=(trunk=true)=>`<circle cx="30" cy="32" r="24" fill="${C.m}" stroke="${C.o}" stroke-width="4"/>`
+  +(trunk?`<g class="trunk">${tube(T_UP,14,7)}<ellipse cx="47" cy="37" rx="5" ry="6" fill="${C.m}"/></g>`:'')
+  +ear(20,34,13,17)+eye(40,26,3.6)+`<ellipse cx="43" cy="40" rx="4.5" ry="3" fill="${C.ck}" opacity=".8"/>`;
+const body=()=>`<g class="far">${leg(64,108,32,C.dk)}${leg(116,108,32,C.dk)}</g>
+  <path d="M38 92q-12 6-8 20" fill="none" stroke="${C.o}" stroke-width="3.5" stroke-linecap="round"/>
+  <ellipse cx="88" cy="96" rx="52" ry="38" fill="${C.m}" stroke="${C.o}" stroke-width="4"/>
+  <g class="near">${leg(48,112,30,C.m)}${leg(100,112,30,C.m)}</g>
+  <circle cx="136" cy="70" r="36" fill="${C.m}" stroke="${C.o}" stroke-width="4"/>
+  <g class="tup">${tube('M164 80C182 86 194 72 192 56C191 47 185 43 180 47',17,10)}</g>
+  <g class="tdown">${tube('M164 84C180 94 184 130 182 205',17,10)}<rect x="176" y="200" width="12" height="20" rx="2" fill="${C.lt}" stroke="${C.o}" stroke-width="3"/><path d="M176 219L182 231L188 219Z" fill="${C.o}"/></g>
+  <ellipse cx="163" cy="80" rx="7" ry="8" fill="${C.m}"/>${ear(122,74,19,24)}${eye(152,62,4.5)}
+  <ellipse cx="156" cy="84" rx="7" ry="4.5" fill="${C.ck}" opacity=".75"/><path d="M155 94q5 4 10 0" fill="none" stroke="${C.o}" stroke-width="2.5" stroke-linecap="round"/>`;
+
+// ---- Text geometry: a hidden mirror of the field (same font, padding, width, wrapping) gives exact token positions.
+const MIR=document.createElement('div');document.body.appendChild(MIR);
+const isTA=()=>box.tagName==='TEXTAREA';
+function measure(text,unit='word'){const cs=getComputedStyle(box),ta=isTA();
+  MIR.style.cssText=`position:absolute;visibility:hidden;left:-9999px;top:0;box-sizing:border-box;width:${box.offsetWidth}px;font:${cs.font};letter-spacing:${cs.letterSpacing};`
+   +`padding:${ta?cs.padding:'0 '+cs.paddingRight+' 0 '+cs.paddingLeft};border:${cs.borderTopWidth} solid transparent;white-space:${ta?'pre-wrap':'pre'};overflow-wrap:break-word;line-height:${ta?cs.lineHeight:box.clientHeight+'px'}`;
+  const parts=unit==='char'?[...text]:unit==='none'?[text]:(text.match(/\s+|\S+\s*/g)||[]);
+  MIR.textContent='';for(const t of parts){const sp=document.createElement('span');sp.textContent=t;MIR.appendChild(sp)}
+  const end=document.createElement('span');end.textContent='​';MIR.appendChild(end);
+  const bl=parseFloat(cs.borderLeftWidth),bt=parseFloat(cs.borderTopWidth),ox=box.offsetLeft+bl,oy=box.offsetTop+bt,cw=box.clientWidth,ch=box.clientHeight;
+  const toks=parts.map((t,i)=>{const sp=MIR.children[i];const x=ox+sp.offsetLeft,y=oy+sp.offsetTop,w=sp.offsetWidth,h=sp.offsetHeight;
+    return{t,i,x,y,w,h,vis:x+w<=ox+cw-2&&y+h<=oy+ch+1}});
+  return{toks,end:{x:ox+end.offsetLeft,y:oy+end.offsetTop,h:end.offsetHeight},box:{x:ox,y:oy,w:cw,h:ch}}}
+function caretXY(s=box.value){const m=measure(s,'none').end;
+  return{x:Math.max(16,Math.min(m.x-box.scrollLeft,box.offsetWidth-16)),y:Math.min(m.y+m.h/2-box.scrollTop,box.offsetHeight-12)}}
+const caretX=s=>caretXY(s).x, caretY=s=>caretXY(s).y;
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Lifecycle: S = everything the mounted variant owns (rAF loops, DOM); ST = timers owned by the current state.
+let S={r:[],els:[]},ST=[];
+function newScope(){S.r.forEach(h=>h.stop=true);S.els.forEach(e=>e.remove());S={r:[],els:[]}}
+const later=(f,ms)=>{ST.push(setTimeout(f,ms))};
+const frame=f=>{const h={stop:false};S.r.push(h);const k=t=>{if(h.stop)return;f(t);requestAnimationFrame(k)};requestAnimationFrame(k)};
+const own=cls=>{const e=document.createElement('div');e.className=cls;wrap.appendChild(e);S.els.push(e);return e};
+const replay=(el,cls)=>{el.classList.remove(cls);void el.getBoundingClientRect();el.classList.add(cls)};
+// Compact head for D-K: same Gopu head, mirrored so it faces the text field. Parts: .hd .tr .ear .eye .pupil
+const MW=84,MH=68;
+const miniSVG=(size,{tx=''}={})=>`<svg width="${size}" viewBox="0 0 ${MW} ${MH}" style="overflow:visible;display:block"><g transform="translate(${MW} 0) scale(-1 1)"><g class="hd">
+  <circle cx="30" cy="32" r="24" fill="${C.m}" stroke="${C.o}" stroke-width="4"/>
+  <g class="tr"><path class="tro" d="${T_UP}" fill="none" stroke="${C.o}" stroke-width="14" stroke-linecap="round"/><path class="tri" d="${T_UP}" fill="none" stroke="${C.m}" stroke-width="7" stroke-linecap="round"/>${tx}</g>
+  <ellipse cx="47" cy="37" rx="5" ry="6" fill="${C.m}"/>${ear(20,34,13,17)}
+  <g class="eye"><g class="pupil"><circle cx="40" cy="26" r="3.6" fill="${C.o}"/><circle cx="38.8" cy="24.7" r="1.25" fill="#fff"/></g></g>
+  <ellipse cx="43" cy="40" rx="4.5" ry="3" fill="${C.ck}" opacity=".8"/></g></g></svg>`;
+const sparkle=(x,y)=>fx('✦',x,y,{dy:-12,dx:4,dur:520,color:C.m,size:11});
+function fx(t,x,y,{dx=0,dy=-30,dur=900,color=C.dk,size=14}={}){if(RM)return;const s=document.createElement('span');s.className='fx';s.textContent=t;Object.assign(s.style,{left:x+'px',top:y+'px',color,fontSize:size+'px'});wrap.appendChild(s);
+  s.animate([{transform:'translate(-50%,-50%) scale(.5)',opacity:0},{opacity:1,offset:.2},{transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(1)`,opacity:0}],{duration:dur,easing:'ease-out'}).onfinish=()=>s.remove();}
+let loops=[];const every=(f,ms)=>{if(!RM)loops.push(setInterval(f,ms))};
+
+// ================= shared: timing + full-body rig =================
+let SLOW=1;const T=ms=>ms*SLOW;
+const ease={out:t=>1-Math.pow(1-t,3),in:t=>t*t*t,inOut:t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2,back:t=>{const c=1.7;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2)}};
+// one-shot rAF tween, owned by the variant scope so switching variants stops it
+const tween=(ms,fn,ez=t=>t)=>new Promise(res=>{if(RM||ms<=0){fn(1);return res()}const t0=performance.now(),h={stop:false};S.r.push(h);
+  const k=t=>{if(h.stop)return res();const p=Math.min(1,(t-t0)/ms);fn(ez(p));p<1?requestAnimationFrame(k):res()};requestAnimationFrame(k)});
+// Full-body side-view Gopu standing on a ground line (default: the field's top border), with a live (spring) trunk that can reach any point.
+const bodyRig=()=>`<g class="far">${leg(64,108,32,C.dk)}${leg(116,108,32,C.dk)}</g>
+  <path d="M38 92q-12 6-8 20" fill="none" stroke="${C.o}" stroke-width="3.5" stroke-linecap="round"/>
+  <ellipse cx="88" cy="96" rx="52" ry="38" fill="${C.m}" stroke="${C.o}" stroke-width="4"/>
+  <g class="near">${leg(48,112,30,C.m)}${leg(100,112,30,C.m)}</g>
+  <circle cx="136" cy="70" r="36" fill="${C.m}" stroke="${C.o}" stroke-width="4"/>${ear(122,74,19,24)}
+  <g class="eye"><g class="pupil"><circle cx="152" cy="62" r="4.5" fill="${C.o}"/><circle cx="150.5" cy="60.4" r="1.6" fill="#fff"/></g></g>
+  <ellipse class="ck" cx="156" cy="84" rx="7" ry="4.5" fill="${C.ck}" opacity=".75"/><path d="M155 94q5 4 10 0" fill="none" stroke="${C.o}" stroke-width="2.5" stroke-linecap="round"/>`;
+const textStartX=()=>{const cs=getComputedStyle(box);return box.offsetLeft+parseFloat(cs.borderLeftWidth)+parseFloat(cs.paddingLeft)};
+function makeRig({W=60,x=null,y=0,flip=false}={}){
+  const s=W/210,f=flip?-1:1,el=own('rig hide');
+  el.innerHTML=`<svg width="${W}" viewBox="0 -20 210 180" style="overflow:visible;display:block">${flip?`<g transform="translate(210 0) scale(-1 1)">${bodyRig()}</g>`:bodyRig()}</svg>`;
+  const tk=own('trk');tk.innerHTML=`<svg width="1" height="1" style="overflow:visible;display:block;position:absolute"><path class="to" fill="none" stroke="${C.o}" stroke-width="${(17*s).toFixed(2)}" stroke-linecap="round"/><path class="ti" fill="none" stroke="${C.m}" stroke-width="${(10*s).toFixed(2)}" stroke-linecap="round"/><circle class="mo" r="${(3.4*s).toFixed(2)}" fill="${C.o}" opacity="0"/></svg>`;
+  // default perch: top-left corner, trunk root just left of where the text starts
+  const base=x??(textStartX()+3-164*s),top=y-160*s,O={x:(flip?115:95)*s,y:160*s};
+  const r={s,W,el,f,base,top,p:{x:0,lift:0,rot:0,sx:1,sy:1},g:{x:0,lift:0,rot:0,sx:1,sy:1},tip:null,v:{x:0,y:0},goal:null,show:false,clip:false,trunkOn:true,
+    to:tk.querySelector('.to'),ti:tk.querySelector('.ti'),mo:tk.querySelector('.mo'),
+    xf(lx,ly){const p=this.p,vx=(lx-O.x)*p.sx,vy=(ly-O.y)*p.sy,a=p.rot*Math.PI/180;return{x:this.base+p.x+O.x+vx*Math.cos(a)-vy*Math.sin(a),y:this.top+p.lift+O.y+vx*Math.sin(a)+vy*Math.cos(a)}},
+    root(){return this.xf((flip?46:164)*s,102*s)},
+    rest(t){const R=this.root();return{x:R.x+f*7,y:R.y-10+Math.sin(t/700)*.8}},
+    cls(c){el.className='rig'+(this.show?'':' hide')+(c?' '+c:'')},
+    pose(o){Object.assign(this.g,o)},jump(o){Object.assign(this.g,o);Object.assign(this.p,o)}};
+  r.cls('');Object.assign(el.style,{left:base+'px',top:top+'px',transformOrigin:`${O.x}px ${O.y}px`});
+  frame(t=>{const k=RM?1:.2/SLOW;for(const n in r.g)r.p[n]+=(r.g[n]-r.p[n])*k;const p=r.p;
+    el.style.transform=`translate(${p.x.toFixed(2)}px,${p.lift.toFixed(2)}px) rotate(${p.rot.toFixed(2)}deg) scale(${p.sx.toFixed(3)},${p.sy.toFixed(3)})`;
+    el.style.clipPath=r.clip?`inset(-40px -40px ${(20*s+p.lift).toFixed(1)}px -40px)`:'';   // when diving, only the part above the top border shows
+    const G=r.goal?r.goal(t):r.rest(t);if(!r.tip)r.tip={...G};
+    if(RM)r.tip={...G};else{const ks=.16/SLOW;r.v.x=(r.v.x+(G.x-r.tip.x)*ks)*.7;r.v.y=(r.v.y+(G.y-r.tip.y)*ks)*.7;r.tip.x+=r.v.x;r.tip.y+=r.v.y}
+    const R=r.root(),Tp=r.tip,dx=Tp.x-R.x;
+    const d=`M${R.x.toFixed(1)} ${R.y.toFixed(1)}C${(R.x+f*6).toFixed(1)} ${(R.y+6).toFixed(1)} ${(Tp.x-dx*.3).toFixed(1)} ${(Tp.y+(Tp.y<R.y?9:-10)).toFixed(1)} ${Tp.x.toFixed(1)} ${Tp.y.toFixed(1)}`;
+    const vis=r.show&&r.trunkOn?'':'none';r.to.style.display=r.ti.style.display=r.mo.style.display=vis;
+    r.to.setAttribute('d',d);r.ti.setAttribute('d',d);r.mo.setAttribute('cx',Tp.x.toFixed(1));r.mo.setAttribute('cy',Tp.y.toFixed(1))});
+  return r}
+// reset a rig at the start of each state
+const rigState=(r,st)=>{r.show=st!=='idle';r.goal=null;r.mo.setAttribute('opacity',0);r.pose({lift:0,rot:0,sx:1,sy:1});r.el.querySelector('.pupil').style.transform='';if(st==='idle')r.cls('')};
+
+const V={
+ A:{name:'Perch & tightrope',about:'<b>A · Perch & tightrope.</b> Gopu drops onto the <i>top border</i> of whatever box you focus and balances there. Press the key: ears flap while it thinks, then it lowers a pencil with its trunk and <i>walks along the border</i>, writing below its feet. When it\'s done it hops and sparkles.',
+  W:72,mount(){this.s=this.W/210;const e=this.el=document.createElement('div');e.className='mA idle';e.innerHTML=`<svg width="${this.W}" viewBox="0 -20 210 240">${body()}</svg>`;e.style.top=-(160*this.s)+'px';wrap.appendChild(e)},
+  at(x){this.el.style.left=(x-182*this.s)+'px'},
+  hx(){return this.el.offsetLeft+136*this.s},hy(){return this.el.offsetTop+20*this.s},
+  render(st){this.el.className='mA '+st;if(st!=='idle'&&st!=='writing')this.at(caretX());
+   if(st==='thinking')every(()=>fx('•',this.hx()+8,this.hy(),{dy:-26,dx:10,size:12}),260);
+   if(st==='done'){['✦','✧','✦'].forEach((t,i)=>fx(t,this.hx()+(i-1)*18,this.hy(),{dy:-22-i*6,dx:(i-1)*10,color:'#E8891C'}))}
+   if(st==='error')fx('☁',this.hx(),this.hy()-6,{dy:-8,dur:1500,color:'#8a8f98',size:22});},
+  follow(x){this.at(x)},retype(){this.render('focused')}},
+ B:{name:'Peekaboo spray',about:'<b>B · Peekaboo spray.</b> Gopu hides <i>behind</i> the box and peeks over its edge when you focus it, so you see just eyes and ears. Press the key: it pops up and its trunk sprays a little fountain while it thinks. Then it <i>sprays the words in</i>, and each letter arcs out of the trunk and lands at the caret. It finishes with a happy toot ♪. On an error it sneezes.',
+  W:64,mount(){this.s=this.W/80;const e=this.el=document.createElement('div');e.className='mB idle';e.innerHTML=`<svg width="${this.W}" viewBox="0 0 80 64">${head()}</svg>`;wrap.appendChild(e);this.inflight='';this.tail=360},
+  tip(){return[this.el.offsetLeft+62*this.s,this.el.offsetTop+15*this.s]},
+  render(st){this.el.className='mB '+st;if(st==='focused')this.el.style.left=Math.max(0,caretX()-26)+'px';
+   if(st==='thinking')every(()=>{const[x,y]=this.tip();fx('•',x,y,{dy:-18-Math.random()*14,dx:(Math.random()-.3)*24,color:'#4aa3df',size:10,dur:600})},90);
+   if(st==='done')setTimeout(()=>{const[x,y]=this.tip();fx('♪',x,y,{dy:-30,dx:12,color:C.dk,size:18,dur:1100});fx('♫',x+8,y,{dy:-40,dx:24,color:C.dk,size:14,dur:1300})},200);
+   if(st==='error'){const[x,y]=this.tip();fx('achoo!',x+10,y,{dy:-16,dx:20,color:'#8a8f98',size:12,dur:1300})}},
+  retype(){this.render('focused')},
+  onChar(ch,commit){if(RM)return commit(ch);const[x0,y0]=this.tip(),x1=caretX(box.value+this.inflight)+4,y1=caretY(box.value+this.inflight);this.inflight+=ch;
+   const s=document.createElement('span');s.className='fx';s.textContent=ch;Object.assign(s.style,{left:0,top:0,color:C.dk,fontSize:'15px'});wrap.appendChild(s);
+   s.animate([{transform:`translate(${x0}px,${y0}px) scale(.4)`},{transform:`translate(${(x0+x1)/2}px,${Math.min(y0,y1)-28}px) scale(1)`,offset:.5},{transform:`translate(${x1}px,${y1-8}px) scale(1)`}],{duration:340,easing:'linear'})
+    .onfinish=()=>{s.remove();this.inflight=this.inflight.slice(1);commit(ch)};return true},
+  follow(){}},
+ C:{name:'Stretchy trunk',about:'<b>C · Stretchy trunk.</b> Gopu rests its chin on the box\'s <i>top-right corner</i>. Press the key: the trunk waves in the air while it thinks, then <i>stretches across the box</i> like a springy arm and writes at the caret with a pencil. When it\'s done, the trunk springs back with a boing and a toot. On an error the trunk flops down.',
+  mount(){const W=box.offsetWidth;this.R={x:W+20+16,y:61};const e=this.el=document.createElementNS('http://www.w3.org/2000/svg','svg');e.setAttribute('class','mC idle');
+   e.setAttribute('width',W+140);e.setAttribute('height',150);Object.assign(e.style,{left:'-20px',top:'-60px'});
+   e.innerHTML=`<path id="to" fill="none" stroke="${C.o}" stroke-width="14" stroke-linecap="round"/><path id="ti" fill="none" stroke="${C.m}" stroke-width="7" stroke-linecap="round"/><g id="pen"><path id="pl" stroke="${C.lt}" stroke-width="7" stroke-linecap="round"/><circle id="pt" r="2.5" fill="${C.o}"/></g><g class="headg"><g transform="translate(${W+20+69} 18.8) scale(-1.1 1.1)">${head(false)}</g></g>`;
+   wrap.appendChild(e);this.T={x:this.R.x-16,y:this.R.y-22};this.v={x:0,y:0};this.st='idle';this.t0=performance.now();
+   const tick=t=>{if(!this.el.isConnected)return;const g=this.goal(t);this.v.x=(this.v.x+(g.x-this.T.x)*.14)*.72;this.v.y=(this.v.y+(g.y-this.T.y)*.14)*.72;this.T.x+=this.v.x;this.T.y+=this.v.y;this.draw(t);requestAnimationFrame(tick)};requestAnimationFrame(tick)},
+  goal(t){const R=this.R,s=this.st;
+   if(s==='thinking')return{x:R.x-34+Math.sin(t/110)*12,y:R.y-38+Math.cos(t/90)*7};
+   if(s==='writing')return{x:20+caretX()+3,y:60+caretY()-11};
+   if(s==='error')return{x:R.x-4,y:R.y+30};
+   return{x:R.x-16+Math.sin(t/700)*2,y:R.y-22};},
+  draw(t){const R=this.R,T=this.T,wob=this.st==='writing'?Math.sin(t/90)*4:0,len=Math.hypot(R.x-T.x,R.y-T.y);
+   const d=`M${R.x} ${R.y}C${R.x-18} ${R.y+4} ${T.x+(R.x-T.x)*.25} ${T.y-Math.min(30,8+len*.12)+wob} ${T.x} ${T.y}`;
+   this.el.querySelector('#to').setAttribute('d',d);this.el.querySelector('#ti').setAttribute('d',d);
+   const pen=this.el.querySelector('#pen');pen.style.display=this.st==='writing'?'':'none';
+   this.el.querySelector('#pl').setAttribute('d',`M${T.x} ${T.y}L${T.x-2} ${T.y+9}`);const pt=this.el.querySelector('#pt');pt.setAttribute('cx',T.x-2.4);pt.setAttribute('cy',T.y+11);},
+  render(st){this.st=st;this.el.setAttribute('class','mC '+st);
+   if(st==='done')setTimeout(()=>{fx('boing!',this.R.x-30,this.R.y-40,{dy:-14,color:C.dk,size:12,dur:1000});fx('♪',this.R.x-50,this.R.y-30,{dy:-26,dx:-10,color:C.dk,size:16,dur:1100})},150);
+   if(st==='error')fx('ugh',this.R.x-24,this.R.y-46,{dy:-10,color:'#8a8f98',size:12,dur:1300});},
+  follow(){}},
+
+ D:{name:'Tiny Walk',about:`<b>D · Tiny Walk.</b> Gopu drops softly onto the box's top border. While it thinks it watches the text and flicks an ear. When the writing starts it takes <i>four tiny steps</i> along the border, stops and looks down at the words. When it's done it gives a small nod. On an error its head tilts and its ears droop.`,
+  mount(){this.r=makeRig({W:46})},
+  render(st){const r=this.r;rigState(r,st);if(st==='idle'){r.jump({x:0,lift:-10});return}
+   if(st==='focused'){r.pose({lift:0});if(r.p.x>4){r.cls('lk-r walk');tween(T(420),p=>r.jump({x:26*(1-p)}));later(()=>r.cls('lk-r'),T(420))}else r.cls('lk-r')}
+   if(st==='thinking')r.cls('lk-d twitch');
+   if(st==='writing'){r.cls('lk-r walk');tween(T(560),p=>r.jump({x:26*p}));later(()=>r.cls('lk-d'),T(560))}
+   if(st==='done'){r.cls('lk-d');r.pose({rot:7});later(()=>r.pose({rot:-2}),T(170));later(()=>r.pose({rot:0}),T(320))}
+   if(st==='error'){r.cls('droop lk-d');r.pose({rot:-7})}},follow(){}},
+
+ E:{name:'Trunk Typing',about:`<b>E · Trunk Typing.</b> Gopu sits at the edge of the box with the tip of its trunk resting on the border. While it thinks it looks up. While it writes, its trunk <i>taps up and down on the border as if typing</i>, in time with the text. When it's done it curls its trunk up proudly. On an error the trunk hangs down and its ears droop.`,
+  mount(){this.r=makeRig({W:46})},
+  render(st){const r=this.r;rigState(r,st);if(st==='idle')return;const R=()=>r.root();
+   r.cls({focused:'lk-d',thinking:'lk-u',writing:'lk-d',done:'lk-r',error:'droop lk-d'}[st]);
+   if(st==='focused'||st==='thinking')r.goal=()=>({x:R().x+8,y:-1});
+   if(st==='writing')r.goal=t=>({x:R().x+9+Math.sin(t/(900*SLOW))*2,y:Math.sin(t/(70*SLOW))>0?1:-7});
+   if(st==='done'){r.goal=()=>({x:R().x+10,y:R().y-20});replay(r.el,'blink1')}
+   if(st==='error'){r.goal=()=>({x:R().x+4,y:R().y+10});r.pose({rot:-6})}},follow(){}},
+
+ F:{name:'Peek & Hide',about:`<b>F · Peek & Hide.</b> Gopu hides behind the box. When you click in, it peeks up over the edge with <i>only its eyes</i> showing. When you press the key it rises to show its whole head and stays up, watching, while it thinks and writes. When it's done it nods and <i>sinks smoothly back out of sight</i>, then peeks again. On an error its ears droop.`,
+  mount(){const e=this.el=own('mini');e.innerHTML=miniSVG(40);this.h=40*MH/MW;Object.assign(e.style,{left:(box.offsetWidth-76)+'px',zIndex:0,transition:'opacity .25s,top .38s cubic-bezier(.25,1.3,.45,1)'});this.lv(0)},
+  lv(n){this.el.style.top=[6,-this.h*.48,-this.h+3][n]+'px'},
+  render(st){const e=this.el;e.className='mini '+({idle:'',focused:'on look-in',thinking:'on look-up',writing:'on look-in',done:'on look-in',error:'on look-down droop tilt'}[st]);
+   this.lv({idle:0,focused:1,thinking:2,writing:2,done:2,error:2}[st]);
+   if(st==='done'){replay(e,'nod');later(()=>{e.style.transition='opacity .25s,top .3s cubic-bezier(.4,0,1,1)';this.lv(0)},T(420));later(()=>e.style.transition='opacity .25s,top .38s cubic-bezier(.25,1.3,.45,1)',T(800))}},follow(){}},
+
+ G:{name:'Little Push',about:`<b>G · Little Push.</b> Gopu stands just left of the box and <i>leans against its edge</i>, with its trunk resting on the side. While it thinks it looks up and flicks an ear. When the writing starts it gives the box <i>one tiny shove</i> that nudges it 3px, then relaxes while the text appears. When it's done it stands up straight and curls its trunk. On an error its ears droop.`,
+  mount(){const s=44/210;this.r=makeRig({W:44,x:-172*s+1,y:Math.min(box.offsetHeight,46)});box.style.transition='transform .2s cubic-bezier(.2,.8,.2,1),border-color .15s,box-shadow .15s'},
+  unmount(){box.style.transform='';box.style.transition=''},
+  render(st){const r=this.r;rigState(r,st);box.style.transform='';if(st==='idle')return;const R=()=>r.root();
+   r.cls({focused:'lk-r',thinking:'lk-u twitch',writing:'lk-r',done:'lk-r',error:'droop lk-d'}[st]);
+   if(st!=='done'&&st!=='error'){r.pose({rot:6,x:1});r.goal=()=>({x:3,y:R().y+4})}
+   if(st==='writing'){r.pose({rot:13,x:4,sx:1.03});box.style.transform='translateX(3px)';later(()=>{box.style.transform='';r.pose({rot:4,x:1,sx:1})},T(220))}
+   if(st==='done'){r.pose({rot:0,sy:1.05});later(()=>r.pose({sy:1}),T(200));r.goal=()=>({x:R().x+9,y:R().y-18})}
+   if(st==='error')r.pose({rot:-4})},follow(){}},
+
+ H:{name:'Trunk Swing',about:`<b>H · Trunk Swing.</b> Gopu sits quietly at the right end of the box's top border, facing the text. While it thinks, its trunk <i>swings slowly from side to side</i> like a pendulum. While it writes it sits still and watches. When it's done the trunk <i>curls up in a little celebration</i> with one sparkle. On an error the trunk hangs limp and its ears droop.`,
+  mount(){this.r=makeRig({W:46,x:box.offsetWidth-44,flip:true})},
+  render(st){const r=this.r;rigState(r,st);if(st==='idle')return;const R=()=>r.root();r.pose({sy:.95,sx:1.03});
+   r.cls({focused:'lk-r',thinking:'lk-d',writing:'lk-r',done:'lk-r perk',error:'droop lk-d'}[st]);
+   if(st==='thinking')r.goal=t=>({x:R().x+Math.sin(t/(380*SLOW))*9,y:R().y+15-Math.abs(Math.sin(t/(380*SLOW)))*3});
+   if(st==='done'){r.goal=()=>({x:R().x-10,y:R().y-20});later(()=>sparkle(r.tip.x-2,r.tip.y-4),T(260))}
+   if(st==='error'){r.goal=()=>({x:R().x-2,y:R().y+15});r.pose({rot:5})}},follow(){}},
+
+ I:{name:'Mini Slide',about:`<b>I · Mini Slide.</b> When you click in, Gopu <i>slides in from the left</i> along the top border with a soft overshoot and stops beside your text. It watches while the writing happens. When it's done it nods and <i>slides away</i> to the right, and it glides back in the next time you're in the box. On an error its ears droop.`,
+  mount(){this.r=makeRig({W:46});this.r.jump({x:-70});this.away=true},
+  spot(){return Math.max(0,Math.min(caretX()-60,box.offsetWidth-120))},
+  render(st){const r=this.r;rigState(r,st);if(st==='idle'){r.jump({x:-70});this.away=true;return}
+   r.cls({focused:'lk-r',thinking:'lk-u twitch',writing:'lk-d',done:'lk-d',error:'droop lk-d'}[st]);
+   if(st==='focused'&&this.away){this.away=false;r.jump({x:-70});const to=this.spot();tween(T(400),p=>r.jump({x:-70+(to+70)*p}),ease.back)}
+   if(st==='done'){r.pose({rot:7});later(()=>r.pose({rot:0}),T(180));
+    later(()=>{const x0=r.p.x;r.cls('lk-r');tween(T(320),p=>r.jump({x:x0+140*p}),ease.in);later(()=>{r.show=false;r.cls('');this.away=true},T(240))},T(420))}
+   if(st==='error')r.pose({rot:-6})},
+  retype(){},follow(){}},
+
+ J:{name:'Happy Bounce',about:`<b>J · Happy Bounce.</b> Gopu stands perfectly still on the box while it thinks and writes, only blinking and watching the text. When it's done it does <i>one happy hop</i>: it crouches, springs up about 10px with its ears lifted, lands with a small squash and settles. On an error its head tilts and its ears droop.`,
+  mount(){this.r=makeRig({W:46})},
+  async hop(){const r=this.r;r.pose({sy:.9,sx:1.07});await sleep(T(130));r.cls('lk-r perk');
+   await tween(T(440),p=>{const k=Math.sin(Math.PI*p);r.jump({lift:-10*k,sy:1+.06*k,sx:1-.04*k})});
+   r.jump({lift:0,sy:.92,sx:1.06});r.pose({sy:1,sx:1});await sleep(T(150));r.cls('lk-r')},
+  render(st){const r=this.r;rigState(r,st);if(st==='idle')return;
+   r.cls({focused:'lk-r',thinking:'lk-u',writing:'lk-d',done:'lk-r',error:'droop lk-d'}[st]);
+   if(st==='done')this.hop();if(st==='error')r.pose({rot:-7})},follow(){}},
+
+ K:{name:'Edge Climb',about:`<b>K · Edge Climb.</b> Gopu waits at the foot of the box's right side. When you press the key it <i>climbs up the side</i> with little steps and rests its chin on the top-right corner, with its trunk draped over the border, to watch the text being written. When it's done it nods and <i>climbs back down</i>. On an error it slips down a little with drooping ears.`,
+  mount(){const s=44/210,H=box.offsetHeight;this.r=makeRig({W:44,x:box.offsetWidth+4-74*s,y:H,flip:true});this.up=70*s-H-2},
+  climb(to,ms){const r=this.r,l0=r.p.lift;r.cls('walk lk-u');return tween(T(ms),p=>r.jump({lift:l0+(to-l0)*p,rot:to<0?-10*p:-10*(1-p)}),ease.inOut).then(()=>r.cls('lk-r'))},
+  render(st){const r=this.r;rigState(r,st);if(st==='idle')return;const up=this.up,R=()=>r.root();
+   if(st==='focused'){r.cls('lk-u');r.jump({lift:r.p.lift});if(r.p.lift<-2)this.climb(0,500)}
+   if(st==='thinking'){this.climb(up,700);r.goal=()=>({x:box.offsetWidth-6,y:R().y<6?1:R().y+10})}
+   if(st==='writing'||st==='done'||st==='error'){r.pose({lift:up,rot:-10});r.cls('lk-r');r.goal=()=>({x:box.offsetWidth-7,y:1})}
+   if(st==='done'){r.pose({rot:-4});later(()=>r.pose({rot:-10}),T(180));later(()=>{r.goal=null;this.climb(0,550)},T(420))}
+   if(st==='error'){r.cls('droop lk-d');r.pose({lift:up+9,rot:-6})}},follow(){}}};
+
+const REPLIES=["Yes! I'll review it this afternoon and send notes by 5.","On it. Want feedback on the story or the visuals?","Sure, I'll go through it after lunch today.",
+  "Absolutely. I'll block an hour after lunch, go through every slide properly, and send you a short list of fixes before 5 so you have time before Friday."];let ri=0;
+const SAMPLES=['','ya ill check it later','hey maya ya ill check the deck later today i think the story part needs some work and maybe the visuals too, will send u notes after lunch if thats ok','translate to spanish',
+  'hi maya\n\nya ill check the deck later. story part needs work and the visuals maybe too, will send notes after lunch'];
+function pickOutput(m,draft){const multi=isTA();
+  if(m==='reply')return multi?"Hi Maya,\nYes, I'll review the launch deck this afternoon and send notes by 5.\nWant me to focus on the story or the visuals?":REPLIES[ri++%REPLIES.length];
+  if(m==='instruction')return multi?"¡Hola Maya!\nReviso la presentación esta tarde y te envío mis notas antes de las 5.":'¡Claro! Reviso la presentación esta tarde y te mando notas.';
+  if(multi&&draft.includes('\n'))return"Hi Maya,\n\nI'll review the deck later today. The story section needs some work, and possibly the visuals too. I'll send my notes after lunch.";
+  if(draft.length>60)return"Hi Maya, I'll review the deck later today. The story section needs some work, and possibly the visuals too. I'll send my notes after lunch if that works.";
+  return"Yes, I'll check it later today and share my notes!"}
+let key=new URLSearchParams(location.search).get('variant')||'A';if(!V[key])key='A';
+let state='idle',mode='-',busy=false;
+function setState(s){state=s;loops.forEach(clearInterval);loops=[];ST.forEach(clearTimeout);ST=[];V[key].render(s);show()}
+function show(){$('state').textContent=`variant  ${key} · ${V[key].name}\nfield    ${isTA()?'multi-line':'single line'}\nstate    ${state}\nmode     ${mode}\nchars    ${box.value.length}`;$('label').textContent=`${key} · ${V[key].name}`;$('about').innerHTML=V[key].about;
+  $('pills').querySelectorAll('.p').forEach(b=>b.classList.toggle('on',b.textContent===key));
+  $('tray').innerHTML=`<svg width="22" viewBox="0 0 80 64">${head()}</svg> Gopu ${state==='idle'?'is resting in the tray':'is with you'}`}
+function mount(k){const o=V[key];loops.forEach(clearInterval);loops=[];ST.forEach(clearTimeout);ST=[];o.unmount?.();if(o.el)o.el.remove();newScope();
+  wrap.querySelectorAll('.fx').forEach(e=>e.remove());key=k;history.replaceState(null,'','?variant='+k);V[k].mount();setState(document.activeElement===box?'focused':'idle')}
+
+// ---- status panel (shared): what Gopu is doing, and a before/after on success
+const STAT=document.createElement('div');STAT.id='status';wrap.appendChild(STAT);
+const esc=t=>t.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).replace(/\n/g,' ⏎ ');
+function status(kind,m,before,after){STAT.style.top=box.offsetHeight+8+'px';if(!$('stat').checked||kind==='off'){STAT.className='';return}
+  const t={thinking:{reply:'Gopu is drafting a reply…',polish:'Gopu is improving your message…',instruction:'Gopu is following your instruction…'},
+    writing:{reply:'Writing your reply…',polish:'Rewriting your text…',instruction:'Applying your instruction…'},
+    done:{reply:'<b>✓</b> Reply written',polish:'<b>✓</b> Rewritten successfully',instruction:'<b>✓</b> Instruction done'}};
+  STAT.innerHTML=kind==='error'?"Couldn't complete. Your draft is safe.":t[kind][m]+(kind==='done'&&before.trim()?`<div class="ba"><b>Before</b><span>${esc(before)}</span><b>After</b><span>${esc(after)}</span></div>`:'');
+  STAT.className='on'}
+
+// ---- one Gopu-key operation; on failure the draft is never lost
+async function press(){if(busy||state!=='focused')return;busy=true;const orig=box.value,draft=orig.trim(),v=V[key];
+  mode=!draft?'reply (empty box)':/^(translate|make|write|turn|summari[sz]e)/i.test(draft)?'instruction':'polish draft';const m=mode.split(' ')[0];
+  let out=null;
+  try{status('thinking',m);setState('thinking');await sleep(T(+$('think').value));
+    if($('fail').checked){$('fail').checked=false;setState('error');status('error',m);await sleep(T(1700));box.value=orig;return}
+    out=pickOutput(m,draft);setState('writing');status('writing',m);
+    while(box.value){box.value=box.value.slice(0,-1);v.follow(caretX());await sleep(T(14))}
+    for(const ch of out){const commit=c=>{box.value+=c;box.scrollLeft=box.scrollWidth;box.scrollTop=box.scrollHeight;v.follow(caretX());show()};v.onChar?v.onChar(ch,commit):commit(ch);await sleep(T(42))}
+    await sleep(T(v.tail||0));
+    box.value=out;if(document.activeElement===box)box.setSelectionRange(out.length,out.length);
+    setState('done');status('done',m,orig,out);await sleep(T(1600));
+  }catch(e){console.error(e);box.value=out??orig}          // a broken animation must never leave half-written text
+  finally{status('off');busy=false;setState(document.activeElement===box?'focused':'idle')}}
+
+// ---- field + inputs
+function bindBox(){box.addEventListener('focus',()=>{if(!busy)setState('focused')});box.addEventListener('blur',()=>{if(!busy)setState('idle')});
+  box.addEventListener('input',()=>{if(state==='focused')V[key].retype?.();show()})}
+function setField(multi){if(busy)return;const el=document.createElement(multi?'textarea':'input');el.id='box';el.placeholder='Message Maya…';el.autocomplete='off';
+  el.value=multi?box.value:box.value.replace(/\n+/g,' ');box.replaceWith(el);box=el;bindBox();$('f1').classList.toggle('on',!multi);$('f2').classList.toggle('on',multi);mount(key)}
+bindBox();$('f1').classList.add('on');
+$('f1').onmousedown=e=>{e.preventDefault();setField(false)};$('f2').onmousedown=e=>{e.preventDefault();setField(true)};
+SAMPLES.forEach((t,i)=>$('s'+i).onmousedown=e=>{e.preventDefault();if(busy)return;box.value=isTA()?t:t.replace(/\n+/g,' ');box.focus();box.setSelectionRange(box.value.length,box.value.length);if(state==='focused')V[key].retype?.();show()});
+$('slow').onchange=e=>{SLOW=e.target.checked?4:1};
+$('stat').onchange=e=>{wrap.classList.toggle('has-status',e.target.checked)};wrap.classList.add('has-status');
+$('key').addEventListener('mousedown',e=>{e.preventDefault();if(document.activeElement!==box)box.focus();press()});
+let solo=false;addEventListener('keydown',e=>{solo=e.code==='ControlRight';if(document.activeElement!==box&&(e.key==='ArrowLeft'||e.key==='ArrowRight'))cycle(e.key==='ArrowRight'?1:-1)});
+addEventListener('keyup',e=>{if(e.code==='ControlRight'&&solo)press();solo=false});
+const keys=Object.keys(V);const cycle=d=>{if(!busy)mount(keys[(keys.indexOf(key)+d+keys.length)%keys.length])};
+$('pills').innerHTML=keys.map(k=>`<button class="p">${k}</button>`).join('');
+$('pills').querySelectorAll('.p').forEach(b=>b.onmousedown=e=>{e.preventDefault();if(!busy)mount(b.textContent)});
+$('prev').onmousedown=e=>{e.preventDefault();cycle(-1)};$('next').onmousedown=e=>{e.preventDefault();cycle(1)};
+mount(key);
+</script></body></html>

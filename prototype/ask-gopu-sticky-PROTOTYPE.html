@@ -1,0 +1,166 @@
+<!doctype html>
+<!-- Ask Gopu: how the box stays on screen. Two options as storyboards, step by step. Static mockup for deciding;
+     names and data are made up. Render: headless Chrome, 2300 wide. -->
+<html><head><meta charset="utf-8"><title>Ask Gopu: staying on screen</title>
+<style>
+  :root{--acc:#B2600B;--ring:#E8891C;--text:#1b1b1b;--sub:#616161;--line:#e5e5e5}
+  body{margin:0;background:#ececec;font:14px 'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif;color:var(--text)}
+  h1{font:600 24px 'Segoe UI Variable Display','Segoe UI';margin:24px 32px 4px}
+  .lede{margin:0 32px 18px;color:var(--sub);max-width:1400px}
+  .row{display:flex;gap:16px;margin:0 32px 34px;align-items:flex-start}
+  .label{width:200px;flex:none}
+  .label b{font:600 18px 'Segoe UI Variable Display','Segoe UI';display:block;margin-bottom:6px}
+  .label p{margin:0;color:var(--sub);font-size:13px;line-height:1.45}
+  .step{flex:1;min-width:0}
+  .step .t{font-weight:600;margin:0 0 6px;font-size:13px}
+  .step .t i{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--acc);color:#fff;font-style:normal;font-size:11px;margin-right:6px}
+  .desk{position:relative;height:420px;border-radius:8px;overflow:hidden;background:linear-gradient(160deg,#7aa7d6 0%,#a9c7e6 45%,#d9c39a 46%,#c9a46d 100%)}
+  .win{position:absolute;left:16px;top:16px;width:230px;height:190px;background:#fff;border-radius:6px;opacity:.6}
+  .taskbar{position:absolute;left:0;right:0;bottom:0;height:30px;background:#202020e6}
+  .taskbar:before{content:'';position:absolute;left:10px;top:8px;width:14px;height:14px;border-radius:2px;background:#4aa3ff}
+  .clock{position:absolute;right:8px;bottom:8px;color:#ddd;font-size:10px}
+  .cursor{position:absolute;width:0;height:0;border-left:7px solid #111;border-top:0;border-right:7px solid transparent;border-bottom:12px solid transparent;transform:rotate(-20deg)}
+  .note{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.4}
+  /* Gopu, side view, standing: his feet are at the bottom of the box */
+  .gopu{position:absolute;width:46px;height:36px}
+  .gopu.hop{transform:translateY(-10px)}
+  .hopmark{position:absolute;font-size:10px;color:#fff;text-shadow:0 1px 2px #0008}
+  .bub{position:absolute;background:#fff;border-radius:10px;padding:5px 9px;font-size:12px;box-shadow:0 3px 10px #0003;white-space:nowrap}
+  .bub:after{content:'';position:absolute;left:12px;bottom:-6px;border:6px solid transparent;border-top-color:#fff;border-bottom:0}
+  /* the flyout (look A) */
+  .fly{position:absolute;width:300px;background:#f9f9f9;border:1px solid #dcdcdc;border-radius:8px;box-shadow:0 8px 24px #0003;font-size:12px}
+  .fly .body{padding:8px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+  .fly .q{align-self:flex-end;background:#fbe9d6;border-radius:8px 8px 2px 8px;padding:4px 8px}
+  .fly ul{margin:0;padding-left:14px;line-height:1.45}
+  .fly .src{display:inline-block;font-size:9px;padding:0 4px;border-radius:6px;background:#eee;color:var(--sub);margin-left:2px}
+  .fly .chips{display:flex;gap:4px;padding:6px 8px 0;flex-wrap:wrap}
+  .fly .chip{font-size:10px;padding:3px 7px;border-radius:10px;background:#fff;border:1px solid #d6d6d6}
+  .fly .bar{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 10px}
+  .fly .ph{flex:1;color:#8a8a8a}
+  .fly .ph.typed{color:var(--text)}
+  .fly .send{width:22px;height:22px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-size:11px}
+  .fly .pin{font-size:11px;color:var(--sub)}
+  /* option B: a tab on the screen edge */
+  .tab{position:absolute;right:0;width:26px;height:58px;background:#f9f9f9;border:1px solid #d0d0d0;border-right:0;border-radius:8px 0 0 8px;box-shadow:-2px 2px 8px #0003;display:grid;place-items:center}
+  .tab svg{width:20px;height:20px}
+  .tab.busy{box-shadow:-2px 2px 8px #0003,0 0 0 2px var(--ring)}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <symbol id="side" viewBox="22 40 200 150">
+    <rect x="64" y="108" width="20" height="32" rx="9" fill="#B2600B" stroke="#2B170A" stroke-width="4"/>
+    <rect x="116" y="108" width="20" height="32" rx="9" fill="#B2600B" stroke="#2B170A" stroke-width="4"/>
+    <path d="M38 92q-12 6-8 20" fill="none" stroke="#2B170A" stroke-width="3.5" stroke-linecap="round"/>
+    <ellipse cx="88" cy="96" rx="52" ry="38" fill="#E8891C" stroke="#2B170A" stroke-width="4"/>
+    <rect x="48" y="112" width="20" height="30" rx="9" fill="#E8891C" stroke="#2B170A" stroke-width="4"/>
+    <rect x="100" y="112" width="20" height="30" rx="9" fill="#E8891C" stroke="#2B170A" stroke-width="4"/>
+    <circle cx="136" cy="70" r="36" fill="#E8891C" stroke="#2B170A" stroke-width="4"/>
+    <path d="M164 80C176 92 178 110 172 124" fill="none" stroke="#2B170A" stroke-width="17" stroke-linecap="round"/>
+    <path d="M164 80C176 92 178 110 172 124" fill="none" stroke="#E8891C" stroke-width="10" stroke-linecap="round"/>
+    <g transform="rotate(-10 122 74)"><ellipse cx="122" cy="74" rx="19" ry="24" fill="#E8891C" stroke="#2B170A" stroke-width="4"/>
+      <ellipse cx="120" cy="76" rx="11.4" ry="14.9" fill="#F06A5E" opacity=".5"/></g>
+    <circle cx="152" cy="62" r="4.5" fill="#2B170A"/><circle cx="150.5" cy="60.4" r="1.6" fill="#fff"/>
+    <ellipse cx="156" cy="84" rx="7" ry="4.5" fill="#F06A5E" opacity=".75"/>
+  </symbol>
+  <symbol id="head" viewBox="0 0 64 64">
+    <path d="M20 18C10 12 1 18 2 30c1 10 9 14 18 10Z" fill="#E8891C" stroke="#2B170A" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M44 18c10-6 19 0 18 12-1 10-9 14-18 10Z" fill="#E8891C" stroke="#2B170A" stroke-width="3.5" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="17" fill="#E8891C" stroke="#2B170A" stroke-width="3.5"/>
+    <circle cx="25" cy="26" r="2.6" fill="#2B170A"/><circle cx="39" cy="26" r="2.6" fill="#2B170A"/>
+    <path d="M32 32C32 42 31 50 37 53c4 2 8-1 7-5" fill="none" stroke="#2B170A" stroke-width="10" stroke-linecap="round"/>
+    <path d="M32 32C32 42 31 50 37 53c4 2 8-1 7-5" fill="none" stroke="#E8891C" stroke-width="4" stroke-linecap="round"/>
+  </symbol>
+</defs></svg>
+
+<h1>Ask Gopu: staying on screen</h1>
+<p class="lede">The same five steps in both options: always there, open with the Gopu key, ask and click away, the answer opens by
+itself, and move it somewhere else. Option A is our own (Gopu stands on the taskbar, as in the welcome); C tucks the same Gopu into the taskbar strip. Option B is a
+tab on the screen edge; brand decision 14 rules that out unless you change it.</p>
+
+<template id="answer">
+  <div class="body"><div class="q">What am I working on right now?</div>
+    <ul><li>Testing the Ask Gopu box in the <b>gopu</b> repo (VS Code, ~45 min)<span class="src">25</span></li>
+      <li>Replying to Rahul on Discord about the stock ledger<span class="src">9</span></li></ul></div>
+</template>
+<template id="chips"><div class="chips"><span class="chip">What did I do today?</span><span class="chip">What's unfinished?</span><span class="chip">★ Daily report</span></div></template>
+
+<!-- A: Gopu on the taskbar -->
+<div class="row"><div class="label"><b>A · Gopu on the taskbar</b><p>Gopu himself is the anchor: about 40 px, standing on the taskbar at the bottom right. The box opens above him. Our own look, and the same Gopu who walks on text boxes.</p></div>
+  <div class="step"><div class="t"><i>1</i>Always there</div><div class="desk"><div class="win"></div>
+      <svg class="gopu" style="right:70px;bottom:30px"><use href="#side"/></svg>
+      <div class="taskbar"></div><span class="clock">12:40</span></div>
+    <div class="note">Stands on the taskbar's top edge. Hover: "Ask Gopu (Right Ctrl)". Tray: "Show Gopu on screen" turns him off.</div></div>
+  <div class="step"><div class="t"><i>2</i>Gopu key or click him</div><div class="desk"><div class="win"></div>
+      <div class="fly" style="right:16px;bottom:72px"><div data-t="chips"></div><div class="bar"><span class="ph">Ask about anything you've seen…</span><span class="pin">📌</span><span class="send">↑</span></div></div>
+      <svg class="gopu" style="right:70px;bottom:30px"><use href="#side"/></svg>
+      <div class="taskbar"></div><span class="clock">12:40</span></div>
+    <div class="note">The box opens right above him, cursor in it.</div></div>
+  <div class="step"><div class="t"><i>3</i>Ask, then click away</div><div class="desk"><div class="win"></div>
+      <div class="bub" style="right:40px;bottom:74px">Thinking…</div>
+      <svg class="gopu" style="right:70px;bottom:30px"><use href="#side"/></svg>
+      <span class="cursor" style="left:120px;top:110px"></span>
+      <div class="taskbar"></div><span class="clock">12:40</span></div>
+    <div class="note">The box folds back into Gopu; he keeps thinking, with his bubble. Your work isn't interrupted.</div></div>
+  <div class="step"><div class="t"><i>4</i>The answer opens by itself</div><div class="desk"><div class="win"></div>
+      <div class="fly" style="right:16px;bottom:82px"><div data-t="answer"></div><div class="bar"><span class="ph">Ask a follow-up…</span><span class="pin">📌</span><span class="send">↑</span></div></div>
+      <svg class="gopu hop" style="right:70px;bottom:30px"><use href="#side"/></svg><span class="hopmark" style="right:62px;bottom:34px">˘ ˘</span>
+      <div class="taskbar"></div><span class="clock">12:41</span></div>
+    <div class="note">A little hop, and the box opens with the answer, without taking the keyboard from what you're typing.</div></div>
+  <div class="step"><div class="t"><i>5</i>Drag him anywhere</div><div class="desk"><div class="win"></div>
+      <svg class="gopu" style="left:120px;top:170px"><use href="#side"/></svg>
+      <div class="bub" style="left:150px;top:140px">Here?</div>
+      <div class="taskbar"></div><span class="clock">12:42</span></div>
+    <div class="note">He stands where you drop him (here on top of a window) and the box opens from there. He stays there after a restart.</div></div>
+</div>
+
+<!-- B: a tab on the screen edge -->
+<div class="row"><div class="label"><b>B · Tab on the screen edge</b><p>A small tab with Gopu's head, stuck to the right edge; the box slides out of it. It conflicts with brand decision 14.</p></div>
+  <div class="step"><div class="t"><i>1</i>Always there</div><div class="desk"><div class="win"></div>
+      <div class="tab" style="top:150px"><svg><use href="#head"/></svg></div>
+      <div class="taskbar"></div><span class="clock">12:40</span></div>
+    <div class="note">A tab on the right edge; can slide up and down the edge.</div></div>
+  <div class="step"><div class="t"><i>2</i>Gopu key or click it</div><div class="desk"><div class="win"></div>
+      <div class="fly" style="right:30px;top:120px"><div data-t="chips"></div><div class="bar"><span class="ph">Ask about anything you've seen…</span><span class="pin">📌</span><span class="send">↑</span></div></div>
+      <div class="tab" style="top:150px"><svg><use href="#head"/></svg></div>
+      <div class="taskbar"></div><span class="clock">12:40</span></div>
+    <div class="note">The box slides out to the left of the tab.</div></div>
+  <div class="step"><div class="t"><i>3</i>Ask, then click away</div><div class="desk"><div class="win"></div>
+      <div class="tab busy" style="top:150px"><svg><use href="#head"/></svg></div>
+      <span class="cursor" style="left:120px;top:110px"></span>
+      <div class="taskbar"></div><span class="clock">12:40</span></div>
+    <div class="note">The box tucks back into the tab; a glowing ring shows it's still thinking.</div></div>
+  <div class="step"><div class="t"><i>4</i>The answer opens by itself</div><div class="desk"><div class="win"></div>
+      <div class="fly" style="right:30px;top:40px"><div data-t="answer"></div><div class="bar"><span class="ph">Ask a follow-up…</span><span class="pin">📌</span><span class="send">↑</span></div></div>
+      <div class="tab" style="top:150px"><svg><use href="#head"/></svg></div>
+      <div class="taskbar"></div><span class="clock">12:41</span></div>
+    <div class="note">The box slides out again with the answer.</div></div>
+  <div class="step"><div class="t"><i>5</i>Move it</div><div class="desk"><div class="win"></div>
+      <div class="tab" style="top:40px"><svg><use href="#head"/></svg></div>
+      <div class="taskbar"></div><span class="clock">12:42</span></div>
+    <div class="note">Slides along the edge only; it can't sit in the middle of the screen.</div></div>
+</div>
+
+<!-- C: Gopu in the taskbar -->
+<div class="row"><div class="label"><b>C · Gopu in the taskbar</b><p>A's Gopu, tucked into the taskbar strip next to the clock, like a tray icon with legs. Never on top of your work; the box opens above the taskbar like Windows' own pop-ups.</p></div>
+  <div class="step"><div class="t"><i>1</i>Always there, out of the way</div><div class="desk"><div class="win"></div>
+      <div class="taskbar"></div><svg class="gopu" style="right:52px;bottom:2px;width:34px;height:26px"><use href="#side"/></svg><span class="clock">12:40</span></div>
+    <div class="note">Sits inside the taskbar, left of the clock. The desktop stays clear.</div></div>
+  <div class="step"><div class="t"><i>2</i>Gopu key or click him</div><div class="desk"><div class="win"></div>
+      <div class="fly" style="right:10px;bottom:40px"><div data-t="chips"></div><div class="bar"><span class="ph">Ask about anything you've seen…</span><span class="pin">📌</span><span class="send">↑</span></div></div>
+      <div class="taskbar"></div><svg class="gopu" style="right:52px;bottom:2px;width:34px;height:26px"><use href="#side"/></svg><span class="clock">12:40</span></div>
+    <div class="note">The box opens just above the taskbar, over Gopu, like the volume pop-up.</div></div>
+  <div class="step"><div class="t"><i>3</i>Ask, then click away</div><div class="desk"><div class="win"></div>
+      <div class="bub" style="right:30px;bottom:36px">Thinking…</div>
+      <span class="cursor" style="left:120px;top:110px"></span>
+      <div class="taskbar"></div><svg class="gopu" style="right:52px;bottom:2px;width:34px;height:26px"><use href="#side"/></svg><span class="clock">12:40</span></div>
+    <div class="note">The box folds away; a small bubble over the taskbar says he's still on it.</div></div>
+  <div class="step"><div class="t"><i>4</i>The answer opens by itself</div><div class="desk"><div class="win"></div>
+      <div class="fly" style="right:10px;bottom:40px"><div data-t="answer"></div><div class="bar"><span class="ph">Ask a follow-up…</span><span class="pin">📌</span><span class="send">↑</span></div></div>
+      <div class="taskbar"></div><svg class="gopu hop" style="right:52px;bottom:2px;width:34px;height:26px"><use href="#side"/></svg><span class="clock">12:41</span></div>
+    <div class="note">He hops once and the box opens with the answer.</div></div>
+  <div class="step"><div class="t"><i>5</i>Keep the chat open</div><div class="desk"><div class="win"></div>
+      <div class="fly" style="left:150px;top:24px;width:230px"><div data-t="answer"></div><div class="bar"><span class="ph">Ask a follow-up…</span><span class="pin" style="color:#B2600B">📌</span><span class="send">↑</span></div></div>
+      <div class="taskbar"></div><svg class="gopu" style="right:52px;bottom:2px;width:34px;height:26px"><use href="#side"/></svg><span class="clock">12:42</span></div>
+    <div class="note">Pin the box and drag it beside your work; Gopu himself stays in the taskbar.</div></div>
+</div>
+<script>for (const el of document.querySelectorAll('[data-t]')) el.innerHTML = document.getElementById(el.dataset.t).innerHTML;</script>
+</body></html>

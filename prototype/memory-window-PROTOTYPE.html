@@ -1,0 +1,237 @@
+<!doctype html>
+<!-- PROTOTYPE, throwaway (memory-v1.1 ticket 05). Three layouts of Gopu's memory window, switchable via ?variant=a|b|c
+     and the bottom bar. Fake data only. Same look as apps/desktop/ui/settings.html (OS-native, saffron accent). -->
+<html lang="en"><head><meta charset="utf-8"><title>Gopu memory: PROTOTYPE</title><style>
+  :root{color-scheme:light dark;--bg:#f3f3f3;--card:#fff;--line:#e5e5e5;--field:#fff;--fline:#d1d1d1;--text:#1b1b1b;--sub:#616161;
+    --hover:#eaeaea;--accent:#B2600B;--accent-fg:#fff;--ring:#E8891C;--ok:#107c10;--bad:#c42b1c;--mark:#ffe0b0}
+  @media (prefers-color-scheme:dark){:root{--bg:#202020;--card:#2b2b2b;--line:#3a3a3a;--field:#2f2f2f;--fline:#4a4a4a;--text:#f3f3f3;--sub:#a8a8a8;
+    --hover:#333;--accent:#E8891C;--accent-fg:#1b1b1b;--ok:#6ccb5f;--bad:#ff99a4;--mark:#6b4413}}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#8a8a8a;color:var(--text);font:14px 'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif}
+  body{display:flex;align-items:center;justify-content:center;padding:24px 24px 90px}
+  .win{background:var(--bg);border-radius:8px;box-shadow:0 12px 40px #0006;overflow:hidden;display:flex;flex-direction:column}
+  .tbar{height:32px;display:flex;align-items:center;padding:0 12px;font-size:12px;color:var(--sub);gap:8px}
+  .tbar b{color:var(--text);font-weight:400}
+  .tbar .dots{margin-left:auto;letter-spacing:14px}
+  h1{margin:0 0 4px;font:600 24px 'Segoe UI Variable Display','Segoe UI',sans-serif}
+  h2{margin:0 0 10px;font:600 16px 'Segoe UI Variable Display','Segoe UI',sans-serif}
+  .sub{color:var(--sub);margin:0 0 16px}
+  input[type=search],input[type=text],select,textarea{font:inherit;color:var(--text);background:var(--field);border:1px solid var(--fline);
+    border-bottom-width:2px;border-radius:4px;padding:6px 10px;outline:0}
+  input:focus,select:focus,textarea:focus{border-bottom-color:var(--ring)}
+  button{font:inherit;border-radius:4px;padding:5px 12px;border:1px solid var(--fline);background:var(--field);color:var(--text);cursor:default}
+  button:hover{background:var(--hover)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}
+  button.danger{color:var(--bad)}
+  button:focus-visible,input:focus-visible{outline:2px solid var(--ring);outline-offset:1px}
+  mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
+  .muted{color:var(--sub);font-size:12px}
+  .pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:10px;border:1px solid var(--line);color:var(--sub)}
+  .res{padding:10px 12px;border-radius:6px;cursor:default}
+  .res:hover,.res.sel{background:var(--hover)}
+  .res .top{display:flex;gap:8px;align-items:baseline}
+  .res .ttl{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .res .snip{color:var(--sub);font-size:13px;margin-top:2px}
+  .app{width:18px;height:18px;border-radius:4px;display:inline-grid;place-items:center;font-size:10px;font-weight:700;color:#fff;flex:none}
+  .full{white-space:pre-wrap;line-height:1.5;font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px;max-height:260px;overflow:auto}
+  .row{display:flex;gap:8px;align-items:center}
+  .grow{flex:1}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+  .rule{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+  .rule:last-child{border:0}
+  .bar{height:8px;border-radius:4px;background:var(--line);position:relative;flex:1}
+  .bar i{position:absolute;inset:0 auto 0 0;border-radius:4px;background:var(--ring)}
+  .bar s{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--sub)}
+  .switch{width:34px;height:18px;border-radius:9px;background:var(--accent);position:relative;flex:none}
+  .switch::after{content:'';position:absolute;right:3px;top:3px;width:12px;height:12px;border-radius:50%;background:#fff}
+  .switch.off{background:var(--fline)}.switch.off::after{right:auto;left:3px}
+  .gap{height:14px}
+  .note{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#1b1b1b;color:#fff;padding:6px 14px;border-radius:6px;font-size:12px;opacity:0;transition:.2s}
+  .note.on{opacity:1}
+  /* variant switcher */
+  #vbar{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background:#1b1b1b;padding:6px;border-radius:10px;box-shadow:0 6px 20px #0006;align-items:center}
+  #vbar span{color:#aaa;font-size:12px;padding:0 10px}
+  #vbar button{background:transparent;border:0;color:#ddd;padding:6px 12px;border-radius:6px}
+  #vbar button[aria-current]{background:#E8891C;color:#1b1b1b;font-weight:600}
+  /* A: settings pages */
+  .A nav{width:200px;padding:8px;display:flex;flex-direction:column;gap:2px}
+  .A nav .grp{font-size:12px;color:var(--sub);padding:12px 14px 4px}
+  .A nav button{all:unset;position:relative;padding:8px 14px;border-radius:5px}
+  .A nav button:hover{background:var(--hover)}
+  .A nav button[aria-current]{background:var(--hover);font-weight:600}
+  .A nav button[aria-current]::before{content:'';position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:2px;background:var(--ring)}
+  .A main{flex:1;background:var(--card);border-left:1px solid var(--line);border-top:1px solid var(--line);border-top-left-radius:8px;display:flex;flex-direction:column;min-width:0}
+  .A .page{flex:1;overflow:auto;padding:22px 30px}
+  .A footer{padding:10px 30px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center}
+  /* B: spotlight */
+  .B .sbox{display:flex;gap:10px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--card)}
+  .B .sbox input{flex:1;font-size:18px;border:0;padding:6px 4px;background:transparent}
+  .B .tabs{display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--line)}
+  .B .tabs button{border:0;background:transparent;border-radius:14px;padding:4px 12px}
+  .B .tabs button[aria-current]{background:var(--accent);color:var(--accent-fg);font-weight:600}
+  .B .split{flex:1;display:flex;min-height:0}
+  .B .list{width:46%;overflow:auto;padding:8px;border-right:1px solid var(--line)}
+  .B .prev{flex:1;overflow:auto;padding:16px 18px;background:var(--card)}
+  .B .sec{font-size:12px;color:var(--sub);padding:10px 12px 4px;font-weight:600}
+  .B footer{padding:8px 16px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;font-size:12px;color:var(--sub)}
+  /* C: dashboard */
+  .C .status{display:flex;align-items:center;gap:12px;padding:14px 22px;background:var(--card);border-bottom:1px solid var(--line)}
+  .C .dot{width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px #107c1022}
+  .C .dot.paused{background:var(--sub);box-shadow:none}
+  .C .body{flex:1;display:grid;grid-template-columns:1fr 300px;min-height:0}
+  .C .left{overflow:auto;padding:16px 22px}
+  .C .rail{overflow:auto;padding:16px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+  .C .day{font-weight:600;margin:14px 0 4px;display:flex;gap:8px;align-items:center}
+  .C .day::after{content:'';flex:1;height:1px;background:var(--line)}
+  .C .exp{margin:6px 0 10px 26px}
+  .menu{position:relative;display:inline-block}
+  .menu .dd{position:absolute;right:0;top:110%;background:var(--card);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px #0003;padding:4px;min-width:200px;z-index:5;display:none}
+  .menu.open .dd{display:block}
+  .dd button{display:block;width:100%;text-align:left;border:0;background:transparent}
+  .dd button:hover{background:var(--hover)}
+</style></head><body>
+<div id="root"></div>
+<div id="vbar"><span>Memory window</span><button data-v="a">A · Settings pages</button><button data-v="b">B · Spotlight</button><button data-v="c">C · Dashboard</button></div>
+<div class="note" id="note"></div>
+<script>
+// ---------- fake data ----------
+const APPS={Chrome:'#1a73e8',Slack:'#4a154b',WhatsApp:'#25d366',Discord:'#5865f2','VS Code':'#0078d4',Outlook:'#0f6cbd'};
+const caps=[
+ {id:1,day:'Today',t:'10:42',app:'Chrome',site:'mail.google.com/mail/u/0',title:'Invoice for November - Gmail',text:'From: Anna Kowalski\nHi, could you send the November invoice by Friday? Our finance team closes the month on the 28th.\nThanks, Anna\n\nCard on file: [card]  ·  IBAN: [iban]'},
+ {id:2,day:'Today',t:'10:31',app:'Slack',site:'',title:'#design-review - Acme',text:'Priya Shah  10:29\nThe new onboarding mockups look great. Can we move the review to Thursday 4 pm?\nRahul  10:30\nThursday works for me.'},
+ {id:3,day:'Today',t:'09:58',app:'WhatsApp',site:'',title:'Rahul Mehta',text:'Rahul Mehta: kale meeting 11 vage rakhiye? invoice nu pan joi lejo\nYou: haa chalse, hu invoice moklu chu'},
+ {id:4,day:'Today',t:'09:12',app:'VS Code',site:'',title:'capture.rs - gopu',text:'fn capture_foreground() {\n    // dedup by hash of app + title + text\n    let api_key = [key];\n}'},
+ {id:5,day:'Yesterday',t:'18:20',app:'Chrome',site:'linkedin.com/messaging',title:'Messaging | LinkedIn',text:'Neha Joshi: Loved your post on local-first apps. Would you be open to a quick call next week about the invoice tooling?'},
+ {id:6,day:'Yesterday',t:'16:05',app:'Discord',site:'',title:'#general - Gopu community',text:'mike: does the Gopu key work in Firefox now?\nyou: yes, since last week'},
+ {id:7,day:'Yesterday',t:'11:47',app:'Outlook',site:'',title:'Re: Contract renewal',text:'Anna Kowalski wrote: The renewal is agreed at the same rate. I will send the signed copy on Monday.'},
+ {id:8,day:'Mon 20 Nov',t:'15:30',app:'Chrome',site:'docs.google.com/document/d',title:'Gopu roadmap - Google Docs',text:'Memory v1.1: capture, search window, recall in the key, people pages, style rules, MCP. Release after memory.'},
+];
+const people=[
+ {name:'Anna Kowalski',also:'anna@kowalski.studio',sum:'Finance contact at Kowalski Studio (client). Formal email, signs "Thanks, Anna".',lang:'English, formal',facts:[['21 Nov','Renewal agreed at the same rate; she sends the signed copy Monday.'],['23 Nov','Asked for the November invoice by Friday.']],edited:false,from:'Gmail, Outlook · 9 taps'},
+ {name:'Rahul Mehta',also:'Rahul, rahul.m',sum:'Colleague, works on Gopu with the user. Casual, short messages.',lang:'Romanized Gujarati, casual',facts:[['23 Nov','Meeting tomorrow at 11; user said they will send the invoice.']],edited:true,from:'WhatsApp, Slack · 14 taps'},
+ {name:'Priya Shah',also:'priya, @priya.s',sum:'Designer on the onboarding work.',lang:'English, friendly',facts:[['23 Nov','Wants the design review moved to Thursday 4 pm.']],edited:false,from:'Slack · 6 taps'},
+];
+const rules=[
+ {r:'No greeting or sign-off',scope:'Slack',src:'Learned from 4 edits',on:true},
+ {r:'Never use emojis',scope:'Everywhere',src:'You said it · 18 Nov',on:true},
+ {r:'At most 2 sentences',scope:'WhatsApp',src:'Learned from 3 edits',on:true},
+ {r:'Sign emails "Thanks, Alex"',scope:'mail.google.com',src:'Learned from 5 edits',on:false},
+];
+const kept=[['Slack',62,41],['WhatsApp',48,30],['Gmail',35,33]];
+const mcp=[['Claude Code',14,'2 min ago',true],['Cursor',0,'never',true],['Claude Desktop',3,'yesterday',false]];
+const ignored=['web.whatsapp.com','Signal'];
+let S={v:new URLSearchParams(location.search).get('variant')||'a',q:'invoice',sel:1,page:'search',tab:'all',paused:false,openMenu:null,person:0};
+
+// ---------- helpers ----------
+const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const hl=s=>{s=esc(s);if(!S.q.trim())return s;const re=new RegExp('('+S.q.trim().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');return s.replace(re,'<mark>$1</mark>')};
+const icon=a=>`<span class="app" style="background:${APPS[a]}">${a[0]}</span>`;
+const hits=()=>caps.filter(c=>!S.q.trim()||(c.title+c.text+c.app+c.site).toLowerCase().includes(S.q.trim().toLowerCase()));
+const snip=c=>{const q=S.q.trim().toLowerCase();const t=c.text.replace(/\n/g,'  ');const i=q?t.toLowerCase().indexOf(q):0;const a=Math.max(0,i-60);return (a?'…':'')+t.slice(a,a+150)+(t.length>a+150?'…':'')};
+const note=m=>{const n=document.getElementById('note');n.textContent=m;n.classList.add('on');setTimeout(()=>n.classList.remove('on'),1600)};
+const status=()=>S.paused?'Paused until 11:42':'Gopu is remembering';
+const size=`Memory: 340 MB · since 3 Sep · kept for 3 months`;
+
+function resRow(c,withDay){return `<div class="res ${S.sel===c.id?'sel':''}" data-sel="${c.id}"><div class="top">${icon(c.app)}<span class="ttl grow">${hl(c.title)}</span><span class="muted">${withDay?c.day+' ':''}${c.t}</span></div>
+  <div class="snip">${c.site?`<span class="muted">${esc(c.site)}</span> · `:''}${hl(snip(c))}</div></div>`}
+function detail(c){if(!c)return '<p class="muted">Pick a result to see everything Gopu captured.</p>';
+  return `<div class="row">${icon(c.app)}<b class="grow">${hl(c.title)}</b></div><div class="muted" style="margin:4px 0 10px">${c.app}${c.site?' · '+esc(c.site):''} · ${c.day} ${c.t}–${c.t.replace(/\d\d$/,m=>String(Math.min(59,+m+4)).padStart(2,'0'))}</div>
+  <div class="full">${hl(c.text)}</div><div class="muted" style="margin-top:6px">Masked: [card] [iban] [key] stand in for secrets Gopu never stores.</div>
+  <div class="row" style="margin-top:10px"><button data-act="copy">Copy text</button><button data-act="forget1" class="danger">Forget this</button><span class="grow"></span><button data-act="ignore">Never capture ${c.site?c.site.split('/')[0]:c.app}</button></div>`}
+function personView(p){return `<div class="row"><h2 class="grow" style="margin:0">${p.name}</h2>${p.edited?'<span class="pill">Edited by you</span>':''}</div>
+  <div class="muted" style="margin:2px 0 10px">Also: ${p.also} · ${p.from}</div>
+  <textarea style="width:100%;height:56px">${p.sum}</textarea>
+  <div class="muted" style="margin:8px 0 4px">Writes to them in</div><div>${p.lang}</div>
+  <div class="muted" style="margin:10px 0 4px">Facts</div>${p.facts.map(f=>`<div class="rule"><span class="pill">${f[0]}</span><span class="grow">${f[1]}</span><button>✕</button></div>`).join('')}
+  <div class="row" style="margin-top:10px"><button class="primary">Save</button><button class="danger" data-act="delp">Delete page</button><span class="grow"></span><button data-act="never">Never make a page for ${p.name.split(' ')[0]}</button></div>`}
+function styleView(compact){return `${compact?'':'<h2>How often you send Gopu\'s text unchanged</h2>'}
+  ${kept.map(k=>`<div class="row" style="margin:6px 0"><span style="width:${compact?70:90}px">${k[0]}</span><div class="bar"><i style="width:${k[1]}%"></i><s style="left:${k[2]}%"></s></div><b style="width:42px;text-align:right">${k[1]}%</b>${compact?'':`<span class="muted" style="width:110px">up from ${k[2]}% last month</span>`}</div>`).join('')}
+  ${compact?'':'<div class="muted">The tick is last month. Higher means Gopu writes more like you.</div><div class="gap"></div><h2>Rules Gopu follows</h2>'}
+  ${(compact?rules.slice(0,2):rules).map(r=>`<div class="rule"><div class="grow"><div>${r.r}</div><div class="muted">${r.scope} · ${r.src}</div></div>${compact?'':'<button>Edit</button><button>✕</button>'}<span class="switch ${r.on?'':'off'}"></span></div>`).join('')}
+  ${compact?'':'<div class="muted" style="margin-top:8px">Your own style notes (Settings → You) always win over these.</div>'}`}
+function privacyView(){return `<h2>Capture</h2><div class="card"><div class="row"><span class="switch ${S.paused?'off':''}"></span><b class="grow">${status()}</b>
+   <button data-act="pause">${S.paused?'Resume':'Pause ▾'}</button></div><div class="muted" style="margin-top:6px">Passwords, sign-in pages, banks, health sites, password managers and private windows are never captured.</div></div>
+  <div class="gap"></div><h2>Never capture</h2><div class="card">${ignored.map(i=>`<div class="rule"><span class="grow">${i}</span><button>Remove</button></div>`).join('')}
+   <div class="row" style="margin-top:8px"><input type="text" class="grow" placeholder="App or site, e.g. web.whatsapp.com"><button>Add and forget its history</button></div></div>
+  <div class="gap"></div><h2>Keep and forget</h2><div class="card"><div class="row"><span class="grow">Keep memory for</span><select><option>1 week</option><option>1 month</option><option selected>3 months</option><option>Forever</option></select></div>
+   <div class="row" style="margin-top:10px"><button data-act="forget">Forget last hour</button><button data-act="forget">Forget today</button><span class="grow"></span><button class="danger" data-act="forgetall">Forget everything…</button></div>
+   <div class="muted" style="margin-top:8px">${size}</div></div>
+  <div class="gap"></div><h2>Other AI apps (MCP)</h2><div class="card">${mcp.map(m=>`<div class="rule"><span class="grow">${m[0]}</span><span class="muted">${m[1]} reads today · last ${m[2]}</span><span class="switch ${m[3]?'':'off'}"></span></div>`).join('')}
+   <div class="row" style="margin-top:8px"><button>Copy config for Claude Code</button><button>Cursor</button><button>JSON</button></div></div>`}
+
+// ---------- A: pages in the settings window ----------
+function A(){const pages={search:'Search',people:'People',style:'Style',privacy:'Privacy'};
+  let body='';
+  if(S.page==='search'){const h=hits(),c=caps.find(x=>x.id===S.sel);
+    body=S.detailA&&c?`<button data-act="back">← Results</button><div class="gap"></div>${detail(c)}`:
+     `<h1>Search</h1><p class="sub">Everything Gopu read on your screen. It stays on this PC.</p>
+     <div class="row"><input type="search" id="q" class="grow" value="${esc(S.q)}" placeholder="Search memory"><select><option>Any time</option><option>Today</option><option>Last 7 days</option></select><select><option>All apps</option>${Object.keys(APPS).map(a=>`<option>${a}</option>`)}</select></div>
+     <div class="muted" style="margin:10px 0 4px">${h.length} results</div>${h.map(c=>resRow(c,true)).join('')}`}
+  else if(S.page==='people')body=`<h1>People</h1><p class="sub">Who you write to often. Gopu uses this only to get names and facts right.</p>
+     <div class="row" style="align-items:flex-start;gap:16px"><div style="width:200px">${people.map((p,i)=>`<div class="res ${S.person===i?'sel':''}" data-person="${i}"><b>${p.name}</b><div class="muted">${p.from}</div></div>`).join('')}</div><div class="grow">${personView(people[S.person])}</div></div>`;
+  else if(S.page==='style')body=`<h1>Style</h1><p class="sub">What Gopu learned from how you edit its text.</p>${styleView()}`;
+  else body=`<h1>Privacy</h1><p class="sub">What Gopu remembers, and what it never touches.</p>${privacyView()}`;
+  return `<div class="win A" style="width:900px;height:640px"><div class="tbar">Gopu settings<span class="dots">– ▢ ✕</span></div><div class="row grow" style="align-items:stretch;min-height:0">
+   <nav><button>Model</button><button>You</button><button>Gopu key</button><div class="grp">Memory</div>${Object.entries(pages).map(([k,v])=>`<button data-page="${k}" ${S.page===k?'aria-current="page"':''}>${v}</button>`).join('')}<div class="grp"></div><button>About</button></nav>
+   <main><div class="page">${body}</div><footer><span class="muted grow">${status()} · ${size}</span><button data-act="pause">${S.paused?'Resume':'Pause'}</button></footer></main></div></div>`}
+
+// ---------- B: spotlight, one box finds everything ----------
+function B(){const q=S.q.trim().toLowerCase(),h=hits();
+  const ppl=people.filter(p=>!q||(p.name+p.sum+p.facts.join(' ')).toLowerCase().includes(q));
+  const rl=rules.filter(r=>!q||(r.r+r.scope).toLowerCase().includes(q));
+  const tabs={all:'All',captures:`Screens ${h.length}`,people:`People ${ppl.length}`,style:'Style',privacy:'Privacy'};
+  let list='',prev='';
+  if(S.tab==='style'){list=`<div style="padding:8px">${styleView()}</div>`}
+  else if(S.tab==='privacy'){list=`<div style="padding:8px">${privacyView()}</div>`}
+  else{ if(S.tab!=='captures'&&ppl.length)list+=`<div class="sec">People</div>`+ppl.map(p=>`<div class="res ${S.selP===p.name?'sel':''}" data-selp="${p.name}"><div class="top"><span class="app" style="background:var(--accent)">${p.name[0]}</span><span class="ttl grow">${p.name}</span></div><div class="snip">${hl(p.facts.at(-1)[1])}</div></div>`).join('');
+    if(S.tab==='all'&&rl.length&&q)list+=`<div class="sec">Style rules</div>`+rl.map(r=>`<div class="res"><div class="ttl">${hl(r.r)}</div><div class="snip">${r.scope}</div></div>`).join('');
+    if(S.tab!=='people'){let d='';list+=h.map(c=>{const s=c.day!==d?`<div class="sec">${c.day}</div>`:'';d=c.day;return s+resRow(c)}).join('')}
+    prev=S.selP?personView(people.find(p=>p.name===S.selP)):detail(caps.find(x=>x.id===S.sel)&&h.find(x=>x.id===S.sel));}
+  const full=S.tab==='style'||S.tab==='privacy';
+  return `<div class="win B" style="width:960px;height:620px"><div class="sbox"><span style="font-size:20px">🔍</span><input type="search" id="q" value="${esc(S.q)}" placeholder="Search everything Gopu remembers"><span class="muted">Ctrl+Shift+G</span></div>
+   <div class="tabs">${Object.entries(tabs).map(([k,v])=>`<button data-tab="${k}" ${S.tab===k?'aria-current':''}>${v}</button>`).join('')}</div>
+   <div class="split">${full?`<div class="prev" style="max-width:none">${list}</div>`:`<div class="list">${list||'<p class="muted" style="padding:12px">Nothing found.</p>'}</div><div class="prev">${prev}</div>`}</div>
+   <footer><span class="dotS">●</span><span class="grow">${status()} · ${size}</span><button data-act="pause">${S.paused?'Resume':'Pause'}</button><button data-act="forget">Forget last 15 min</button></footer></div>`}
+
+// ---------- C: dashboard with status strip and side rail ----------
+function C(){const h=hits();let d='';
+  const list=h.map(c=>{const s=c.day!==d?`<div class="day">${c.day}</div>`:'';d=c.day;return s+resRow(c)+(S.sel===c.id?`<div class="exp">${detail(c)}</div>`:'')}).join('');
+  const menu=(id,label,items)=>`<div class="menu ${S.openMenu===id?'open':''}"><button data-menu="${id}">${label} ▾</button><div class="dd">${items.map(i=>`<button data-act="${i[1]}">${i[0]}</button>`).join('')}</div></div>`;
+  return `<div class="win C" style="width:1000px;height:660px"><div class="tbar">Gopu memory<span class="dots">– ▢ ✕</span></div>
+   <div class="status"><span class="dot ${S.paused?'paused':''}"></span><div class="grow"><b>${status()}</b><div class="muted">${size}</div></div>
+    ${S.paused?'<button data-act="pause" class="primary">Resume</button>':menu('p','Pause',[['15 minutes','pause'],['1 hour','pause'],['Until tomorrow','pause']])}
+    ${menu('f','Forget',[['Last 15 minutes','forget'],['Last hour','forget'],['Today','forget'],['Everything…','forgetall']])}
+    <button data-act="privacy">Privacy & AI apps</button></div>
+   <div class="body"><div class="left"><input type="search" id="q" style="width:100%;font-size:15px;padding:8px 12px" value="${esc(S.q)}" placeholder="Search what you've seen">
+     <div class="muted" style="margin-top:8px">${h.length} results · click one to open it here</div>${list}</div>
+    <div class="rail"><div class="card"><div class="row"><b class="grow">People</b><span class="muted">${people.length}</span></div>${people.map(p=>`<div class="rule"><span class="app" style="background:var(--accent)">${p.name[0]}</span><div class="grow"><div>${p.name}</div><div class="muted">${p.facts.at(-1)[1]}</div></div></div>`).join('')}<button style="width:100%;margin-top:6px">Open People</button></div>
+     <div class="card"><div class="row"><b class="grow">Your voice</b><span class="muted">kept unchanged</span></div>${styleView(true)}<button style="width:100%;margin-top:8px">All ${rules.length} rules</button></div></div></div></div>`}
+
+// ---------- render + events ----------
+function render(){const f=document.activeElement&&document.activeElement.id==='q',pos=f?document.activeElement.selectionStart:0;
+  document.getElementById('root').innerHTML={a:A,b:B,c:C}[S.v]();
+  document.querySelectorAll('#vbar button').forEach(b=>b.toggleAttribute('aria-current',b.dataset.v===S.v));
+  const q=document.getElementById('q');if(q){q.oninput=e=>{S.q=e.target.value;render()};if(f){q.focus();q.setSelectionRange(pos,pos)}}}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-v],[data-page],[data-sel],[data-selp],[data-tab],[data-act],[data-person],[data-menu]');
+  if(!t){if(S.openMenu){S.openMenu=null;render()}return}const D=t.dataset;
+  if(D.v){S.v=D.v;history.replaceState(null,'','?variant='+D.v)}
+  if(D.page){S.page=D.page;S.detailA=false}
+  if(D.sel){S.sel=S.v==='c'&&S.sel===+D.sel?null:+D.sel;S.selP=null;S.detailA=true}
+  if(D.selp){S.selP=D.selp}
+  if(D.tab){S.tab=D.tab}
+  if(D.person){S.person=+D.person}
+  if(D.menu){S.openMenu=S.openMenu===D.menu?null:D.menu;return render()}
+  S.openMenu=null;
+  if(D.act==='back')S.detailA=false;
+  if(D.act==='pause'){S.paused=!S.paused;note(S.paused?'Paused until 11:42. The Gopu key still works.':'Remembering again')}
+  if(D.act==='copy')note('Copied');
+  if(D.act==='forget1')note('Forgotten for good');
+  if(D.act==='forget')note('Forgotten. 12 captures wiped.');
+  if(D.act==='forgetall')note('Would ask: "Forget everything, including people and style rules?"');
+  if(D.act==='ignore')note('Would ask: "Never capture this, and forget 214 captures?"');
+  if(D.act==='never')note('No page will be made for this person');
+  if(D.act==='delp')note('Page deleted');
+  if(D.act==='privacy'){S.v='a';S.page='privacy';history.replaceState(null,'','?variant=a')}
+  render()});
+render();
+</script></body></html>

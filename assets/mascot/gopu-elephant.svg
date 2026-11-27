@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="t d">
+<title id="t">Gopu</title><desc id="d">A round gold baby elephant with big ears, rosy cheeks and a curled trunk, on a cream circle.</desc>
+<circle cx="256" cy="256" r="245" fill="#FFF8ED"/>
+<ellipse cx="256" cy="470" rx="120" ry="14" fill="#8C603A" opacity=".12"/>
+<!-- body + feet -->
+<ellipse cx="256" cy="400" rx="104" ry="70" fill="#FFC977" stroke="#8C603A" stroke-width="11"/>
+<ellipse cx="256" cy="412" rx="62" ry="44" fill="#FFE6B4"/>
+<rect x="166" y="420" width="70" height="50" rx="25" fill="#FFC977" stroke="#8C603A" stroke-width="11"/>
+<rect x="276" y="420" width="70" height="50" rx="25" fill="#FFC977" stroke="#8C603A" stroke-width="11"/>
+<path d="M186 458h30M296 458h30" stroke="#FFE6B4" stroke-width="8" stroke-linecap="round"/>
+<!-- ears -->
+<path d="M168 168C102 128 34 172 40 252c5 72 66 104 128 80Z" fill="#FFC977" stroke="#8C603A" stroke-width="11" stroke-linejoin="round"/>
+<path d="M344 168c66-40 134 4 128 84-5 72-66 104-128 80Z" fill="#FFC977" stroke="#8C603A" stroke-width="11" stroke-linejoin="round"/>
+<path d="M150 190c-40-18-80 12-76 60 3 40 36 60 76 50Z" fill="#F29A8A" opacity=".45"/>
+<path d="M362 190c40-18 80 12 76 60-3 40-36 60-76 50Z" fill="#F29A8A" opacity=".45"/>
+<!-- head -->
+<circle cx="256" cy="232" r="124" fill="#FFC977" stroke="#8C603A" stroke-width="11"/>
+<path d="M240 112c-6-14 4-26 16-22M256 110c2-16 16-22 26-12" fill="none" stroke="#8C603A" stroke-width="8" stroke-linecap="round"/>
+<!-- face -->
+<ellipse cx="174" cy="282" rx="28" ry="17" fill="#F29A8A" opacity=".6"/>
+<ellipse cx="338" cy="282" rx="28" ry="17" fill="#F29A8A" opacity=".6"/>
+<circle cx="208" cy="228" r="17" fill="#493527"/><circle cx="304" cy="228" r="17" fill="#493527"/>
+<circle cx="203" cy="222" r="5.5" fill="#fff"/><circle cx="299" cy="222" r="5.5" fill="#fff"/>
+<path d="M214 300q14 14 28 4M298 300q-14 14-28 4" fill="none" stroke="#8C603A" stroke-width="7" stroke-linecap="round"/>
+<!-- trunk: cocoa tube under gold tube = outlined trunk -->
+<path id="trunk" d="M256 262C256 312 250 352 278 366c24 12 46-4 42-26" fill="none" stroke="#8C603A" stroke-width="56" stroke-linecap="round"/>
+<path d="M256 262C256 312 250 352 278 366c24 12 46-4 42-26" fill="none" stroke="#FFC977" stroke-width="34" stroke-linecap="round"/>
+<ellipse cx="256" cy="258" rx="17" ry="24" fill="#FFC977"/>
+<path d="M246 318h20M248 338h18" stroke="#8C603A" stroke-width="5" stroke-linecap="round" opacity=".5"/>
+</svg>

@@ -1,0 +1,51 @@
+# A `v*` tag (matching the version in apps/desktop/Cargo.toml): test, build the installer with gopu-mcp.exe, sign
+# the update, and draft a GitHub Release with the installer, latest.json, SHA256SUMS.txt and docs/release/<version>.md.
+# Publish the draft by hand. Not a pre-release: the updater reads releases/latest, which skips pre-releases.
+# Needs the secret TAURI_SIGNING_PRIVATE_KEY (the text of ~/.tauri/gopu-updater.key; no password).
+# Code signing (release ticket 04): none yet; SignPath goes after the build step once accepted.
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Check the tag, version and notes agree
+        id: v
+        shell: bash
+        run: |
+          v=$(grep -m1 '^version' apps/desktop/Cargo.toml | cut -d'"' -f2)
+          [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "::error::tag $GITHUB_REF_NAME, but apps/desktop/Cargo.toml says $v"; exit 1; }
+          [ -f "docs/release/$v.md" ] || { echo "::error::write docs/release/$v.md first"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          { echo 'notes<<END_OF_NOTES'; cat "docs/release/$v.md"; echo; echo 'END_OF_NOTES'; } >> "$GITHUB_OUTPUT"
+      - run: cargo test --workspace
+      - uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+        with:
+          projectPath: apps/desktop
+          tauriScript: npx @tauri-apps/cli@2
+          tagName: ${{ github.ref_name }}
+          releaseName: Gopu ${{ steps.v.outputs.version }} (preview)
+          releaseBody: ${{ steps.v.outputs.notes }}
+          releaseDraft: true
+          prerelease: false
+          updaterJsonPreferNsis: true
+      - name: Checksums
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd target/release/bundle/nsis
+          sha256sum *.exe > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          gh release upload "$GITHUB_REF_NAME" SHA256SUMS.txt --clobber

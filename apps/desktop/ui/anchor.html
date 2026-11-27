@@ -1,0 +1,111 @@
+<!doctype html>
+<!-- The tab Ask Gopu waits in (src/anchor.rs). Stuck to a screen edge it's a warm dark tab whose ends flow into the
+     edge; dropped mid-screen it's a glass capsule. Click: open or fold the box. Drag: it floats, leans toward an edge
+     it comes near, and sticks with a stretch-and-settle. -->
+<html><head><meta charset="utf-8"><title>Ask Gopu</title>
+<style>
+  :root{--tab:#2B170A;--tab-hover:#3d2210;--glass:rgba(255,248,240,.62);--glass-edge:rgba(43,23,10,.28);--ring:#E8891C}
+  @media (prefers-color-scheme:dark){:root{--glass:rgba(43,30,20,.62);--glass-edge:rgba(255,220,180,.28)}}
+  html,body{margin:0;height:100%;background:transparent;overflow:hidden;user-select:none;cursor:pointer}
+  #svg{display:block;width:100%;height:100%;overflow:visible}
+  #shape{fill:var(--tab);transition:d .42s cubic-bezier(.3,1.6,.5,1)}
+  body:hover:not(.float) #shape{fill:var(--tab-hover)}
+  body.float #shape{fill:var(--glass);stroke:var(--glass-edge);stroke-width:1;transition:none}
+  #body{transition:transform .12s ease-out}
+  /* the glue: squashed into the edge, then a springy settle */
+  body.stick #body{animation:stick .5s cubic-bezier(.3,1.5,.5,1)}
+  @keyframes stick{0%{transform:scale(var(--sx0),var(--sy0))}55%{transform:scale(var(--sx1),var(--sy1))}100%{transform:none}}
+  /* thinking: a saffron ring breathes around the tab */
+  body.thinking #shape{stroke:var(--ring);stroke-width:2;animation:breathe 1.2s ease-in-out infinite}
+  @keyframes breathe{50%{stroke-width:3.5;stroke-opacity:.55}}
+  #head{transform-box:fill-box;transform-origin:50% 100%}
+  body.hop #head{animation:hop .45s ease-out}
+  @keyframes hop{30%{transform:translateY(-4px)}60%{transform:translateY(0) scaleY(.9)}}
+  @media (prefers-reduced-motion:reduce){#shape{transition:none}body.stick #body,body.thinking #shape,body.hop #head{animation:none}}
+</style></head><body>
+<svg id="svg" aria-hidden="true">
+  <g id="body"><path id="shape"/>
+    <g id="head"><svg id="face" viewBox="0 0 64 64" width="22" height="22">
+      <path d="M20 18C10 12 1 18 2 30c1 10 9 14 18 10Z" fill="#E8891C" stroke="#2B170A" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="M44 18c10-6 19 0 18 12-1 10-9 14-18 10Z" fill="#E8891C" stroke="#2B170A" stroke-width="3.5" stroke-linejoin="round"/>
+      <circle cx="32" cy="28" r="17" fill="#E8891C" stroke="#2B170A" stroke-width="3.5"/>
+      <circle cx="25" cy="26" r="2.6" fill="#2B170A"/><circle cx="39" cy="26" r="2.6" fill="#2B170A"/>
+      <path d="M32 32C32 42 31 50 37 53c4 2 8-1 7-5" fill="none" stroke="#2B170A" stroke-width="10" stroke-linecap="round"/>
+      <path d="M32 32C32 42 31 50 37 53c4 2 8-1 7-5" fill="none" stroke="#E8891C" stroke-width="4" stroke-linecap="round"/>
+    </svg></g>
+  </g>
+</svg>
+<script>
+const invoke = window.__TAURI__.core.invoke;
+const $ = id => document.getElementById(id);
+// sizes match src/anchor.rs: a stuck tab is 74 along its edge and 30 deep; the capsule is 34 × 62
+const LEN = 74, DEPTH = 30;
+
+// A stuck tab, drawn along the edge (a: along it, o: away from it) and mapped onto the real edge. `f`: how far its
+// ends flow into the edge; `d`: how deep it reaches. f = 8, d = 30 is the resting tab; f = 0, d = 20 the first touch.
+// Both have the same commands, so the browser can morph one into the other.
+function tabPath(edge, f, d) {
+  const map = ([a, o]) => ({ right: [DEPTH - o, a], left: [o, a], top: [a, o], bottom: [a, DEPTH - o] })[edge];
+  const pts = [[8 - f, 0], [8, 0], [8, f], [8, d - 12], [8, d], [20, d], [54, d], [66, d], [66, d - 12], [66, f], [66, 0], [66 + f, 0]].map(map);
+  const p = i => pts[i].join(',');
+  return `M${p(0)} Q${p(1)} ${p(2)} L${p(3)} Q${p(4)} ${p(5)} L${p(6)} Q${p(7)} ${p(8)} L${p(9)} Q${p(10)} ${p(11)} Z`;
+}
+const CAPSULE = 'M1,17 A16,16 0 0 1 33,17 L33,45 A16,16 0 0 1 1,45 Z';
+const ORIGIN = { right: '100% 50%', left: '0 50%', top: '50% 0', bottom: '50% 100%', float: '50% 50%' };
+
+window.anchor = {
+  // the shape for an edge (or 'float'); `stick`: it just landed there, so it flows into the edge
+  shape(edge, stick) {
+    const side = edge === 'left' || edge === 'right', float = edge === 'float';
+    const [w, h] = float ? [34, 62] : side ? [DEPTH, LEN] : [LEN, DEPTH];
+    $('svg').setAttribute('viewBox', `0 0 ${w} ${h}`);
+    document.body.classList.remove('float', 'stick');
+    document.body.classList.toggle('float', float);
+    // the head sits in the middle of the tab's body (away from the ends that flow into the edge)
+    const inset = { right: [-2, 0], left: [2, 0], top: [0, 2], bottom: [0, -2], float: [0, 0] }[edge];
+    $('face').setAttribute('x', w / 2 - 11 + inset[0]);
+    $('face').setAttribute('y', h / 2 - 11 + inset[1]);
+    $('body').style.transform = '';
+    $('body').style.transformOrigin = ORIGIN[edge];
+    const shape = $('shape');
+    if (float) { shape.style.d = ''; shape.setAttribute('d', CAPSULE); return; }
+    shape.removeAttribute('d');
+    if (!stick) {
+      // a plain move (start-up, another screen): no morph from the old shape
+      shape.style.transition = 'none';
+      shape.style.d = `path("${tabPath(edge, 8, DEPTH)}")`;
+      void shape.getBoundingClientRect();
+      shape.style.transition = '';
+      return;
+    }
+    // the glue: touch the edge narrow, then flow into it and spring into place
+    document.body.style.cssText = side ? '--sx0:.55;--sy0:1.08;--sx1:1.12;--sy1:.97' : '--sx0:1.08;--sy0:.55;--sx1:.97;--sy1:1.12';
+    shape.style.transition = 'none';
+    shape.style.d = `path("${tabPath(edge, 0, 20)}")`;
+    void shape.getBoundingClientRect();
+    shape.style.transition = '';
+    shape.style.d = `path("${tabPath(edge, 8, DEPTH)}")`;
+    document.body.classList.add('stick');
+    setTimeout(() => document.body.classList.remove('stick'), 520);
+  },
+  // while dragged: the capsule leans and stretches toward the nearest edge, more as it gets closer (0 to 1)
+  pull(toward, amount) {
+    const [dx, dy] = { right: [1, 0], left: [-1, 0], top: [0, -1], bottom: [0, 1] }[toward];
+    const k = 1 + amount * .18;
+    $('body').style.transformOrigin = ORIGIN[toward];
+    $('body').style.transform = amount ? `translate(${dx * amount * 3}px,${dy * amount * 3}px) scale(${dx ? k : 1},${dy ? k : 1})` : '';
+  },
+  thinking(on) { document.body.classList.toggle('thinking', on); },
+  hop() { document.body.classList.remove('hop'); void document.body.offsetWidth; document.body.classList.add('hop'); },
+};
+anchor.shape('right', false);
+
+// a press that moves more than a few pixels drags the tab; one that doesn't is a click
+let down = null;
+document.addEventListener('mousedown', e => { if (e.button === 0) down = { x: e.screenX, y: e.screenY }; });
+document.addEventListener('mousemove', e => {
+  if (down && Math.hypot(e.screenX - down.x, e.screenY - down.y) > 4) { down = null; invoke('anchor_drag'); }
+});
+document.addEventListener('mouseup', () => { if (down) invoke('anchor_click'); down = null; });
+</script>
+</body></html>

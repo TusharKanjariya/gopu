@@ -1,0 +1,3 @@
+[workspace]
+members = ["apps/desktop", "crates/gopu-core"]
+resolver = "2"

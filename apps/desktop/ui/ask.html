@@ -1,0 +1,267 @@
+<!doctype html>
+<!-- The Ask Gopu box (look A, prototype/ask-gopu-PROTOTYPE.html): a flyout that grows upward from its bar. The window
+     is transparent around the card; ask_fit sizes it to the card. -->
+<html><head><meta charset="utf-8"><title>Ask Gopu</title>
+<style>
+  :root{color-scheme:light dark;--card:#f9f9f9;--line:#e5e5e5;--edge:#dcdcdc;--field:#fff;--text:#1b1b1b;--sub:#616161;
+    --acc:#B2600B;--acc-fg:#fff;--ring:#E8891C;--you:#fbe9d6;--chip:#eee;--hover:#ececec}
+  @media (prefers-color-scheme:dark){:root{--card:#2b2b2b;--line:#3a3a3a;--edge:#454545;--field:#323232;--text:#f3f3f3;--sub:#a8a8a8;
+    --acc:#E8891C;--acc-fg:#1b1b1b;--you:#4a3218;--chip:#3a3a3a;--hover:#363636}}
+  html,body{margin:0;background:transparent;overflow:hidden;font:14px 'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif;color:var(--text)}
+  #card{margin:10px 10px 12px;background:var(--card);border:1px solid var(--edge);border-radius:8px;box-shadow:0 6px 20px #0004}
+  #thread{display:flex;flex-direction:column;gap:10px;padding:12px 14px 6px;overflow-y:auto;border-bottom:1px solid var(--line)}
+  #thread:empty{display:none}
+  .q{align-self:flex-end;background:var(--you);border-radius:10px 10px 2px 10px;padding:7px 10px;font-size:13px;max-width:85%;white-space:pre-wrap}
+  .a{font-size:13px;line-height:1.5;user-select:text}
+  .a h4{margin:4px 0;font-size:14px}
+  .a ul{margin:2px 0;padding-left:18px}
+  .a p{margin:0 0 6px}
+  .src{display:inline-block;font-size:10px;line-height:14px;padding:0 5px;margin-left:2px;border-radius:7px;background:var(--chip);color:var(--sub);vertical-align:1px;cursor:pointer;border:0;font-family:inherit}
+  .src:hover,.src:focus-visible{background:var(--ring);color:#fff;outline:none}
+  .err{color:var(--sub);font-size:13px}
+  .you{display:inline-block;font-size:10px;line-height:14px;padding:0 5px;margin-left:2px;border-radius:7px;background:var(--you);color:var(--acc);vertical-align:1px}
+  .foot{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--sub);margin-top:2px}
+  .foot button{font:inherit;border:1px solid var(--edge);border-radius:4px;padding:2px 10px;background:var(--field);color:var(--text)}
+  .dots i{display:inline-block;width:5px;height:5px;margin:0 2px;border-radius:50%;background:var(--sub);animation:b 1s infinite}
+  .dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+  @keyframes b{0%,80%,100%{opacity:.25}40%{opacity:1}}
+  #bar{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px}
+  #note{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:10px 12px 0;font-size:13px}
+  #note[hidden]{display:none}
+  #note button{font:inherit;font-size:12px;padding:4px 10px;border-radius:14px;background:var(--field);border:1px solid var(--edge);color:var(--text);cursor:pointer}
+  #note button.saved{border-color:var(--ring);color:var(--acc);font-weight:600}
+  #chips{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px 0}
+  #chips button{font:inherit;font-size:12px;padding:4px 10px;border-radius:14px;background:var(--field);border:1px solid var(--edge);color:var(--text);cursor:pointer}
+  #chips button:hover,#chips button:focus-visible{border-color:var(--ring);outline:none}
+  .hist{display:flex;flex-direction:column;gap:2px}
+  .hist-head{font-weight:600;font-size:13px;margin-bottom:4px;display:flex;align-items:baseline;gap:8px}
+  .hist-head span{font-weight:400;font-size:11px;color:var(--sub)}
+  .hist-item{display:flex;align-items:baseline;gap:10px;text-align:left;font:inherit;font-size:13px;color:var(--text);background:transparent;border:0;border-radius:6px;padding:6px 8px;cursor:pointer}
+  .hist-item:hover,.hist-item:focus-visible{background:var(--hover);outline:none}
+  .hist-item span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hist-item small{color:var(--sub);white-space:nowrap}
+  #chips button.saved{border-color:var(--ring);color:var(--acc);font-weight:600}
+  .saveask{display:flex;flex-direction:column;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+  .saveask input,.saveask textarea{font:inherit;font-size:13px;color:var(--text);background:var(--field);border:1px solid var(--edge);border-radius:4px;padding:5px 7px;resize:vertical}
+  .saveask input:focus,.saveask textarea:focus{outline:2px solid var(--ring);outline-offset:-1px}
+  #bar svg{width:22px;height:22px;flex:none;cursor:grab}
+  #q{flex:1;border:0;outline:0;background:transparent;font:inherit;color:var(--text);min-width:0}
+  #q::placeholder{color:var(--sub)}
+  .ico{width:30px;height:30px;border:0;border-radius:6px;background:transparent;color:var(--sub);font-size:15px;display:grid;place-items:center;cursor:pointer}
+  .ico:hover{background:var(--hover)}
+  .ico[aria-pressed=true]{color:var(--acc);background:var(--you)}
+  #send{width:30px;height:30px;border:0;border-radius:50%;background:var(--acc);color:var(--acc-fg);font-size:15px;cursor:pointer;flex:none}
+  #send:disabled{opacity:.4;cursor:default}
+  @media (prefers-reduced-motion:reduce){.dots i{animation:none;opacity:.6}}
+</style></head><body>
+<div id="card">
+  <div id="thread" aria-live="polite"></div>
+  <div id="note" role="status" hidden></div>
+  <div id="chips">
+    <button type="button" data-ask="What did I do today?">What did I do today?</button>
+    <button type="button" data-ask="What's unfinished?">What's unfinished?</button>
+  </div>
+  <div id="bar">
+    <svg viewBox="0 0 64 64" id="grip" aria-hidden="true"><g pointer-events="none">
+      <path d="M20 18C10 12 1 18 2 30c1 10 9 14 18 10Z" fill="#E8891C" stroke="#2B170A" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="M44 18c10-6 19 0 18 12-1 10-9 14-18 10Z" fill="#E8891C" stroke="#2B170A" stroke-width="3.5" stroke-linejoin="round"/>
+      <circle cx="32" cy="28" r="17" fill="#E8891C" stroke="#2B170A" stroke-width="3.5"/>
+      <circle cx="25" cy="26" r="2.6" fill="#2B170A"/><circle cx="39" cy="26" r="2.6" fill="#2B170A"/>
+      <path d="M32 32C32 42 31 50 37 53c4 2 8-1 7-5" fill="none" stroke="#2B170A" stroke-width="10" stroke-linecap="round"/>
+      <path d="M32 32C32 42 31 50 37 53c4 2 8-1 7-5" fill="none" stroke="#E8891C" stroke-width="4" stroke-linecap="round"/></g></svg>
+    <input id="q" type="text" placeholder="Ask about anything you've seen…" aria-label="Ask Gopu" autocomplete="off" spellcheck="true">
+    <button class="ico" id="past" title="Past chats" aria-label="Past chats">🕘</button>
+    <button class="ico" id="new" title="New chat" aria-label="New chat">＋</button>
+    <button class="ico" id="pin" aria-pressed="false" title="Pin: keep it on screen">📌</button>
+    <button id="send" title="Ask (Enter)" aria-label="Ask" disabled>↑</button>
+  </div>
+</div>
+<script>
+const invoke = window.__TAURI__.core.invoke;
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+let busy = false;
+// the chat: [question, answer] pairs sent with each follow-up, the captures the last answer used, and its kept id
+let chat = [], keep = [], chatId = null;
+// the ★ buttons: { name, text }
+let saved = [];
+
+// the card's height decides the window's; the thread grows to half the screen, then scrolls
+function fit() {
+  $('thread').style.maxHeight = Math.floor(screen.availHeight * 0.5) + 'px';
+  invoke('ask_fit', { height: $('card').offsetHeight + 22 });
+}
+new ResizeObserver(fit).observe($('card'));
+
+// Shows the newest message: scrolls the chat only. (scrollIntoView would also scroll the page inside the window,
+// pushing the box's top out of sight.) The page itself never scrolls.
+function toEnd() {
+  const t = $('thread');
+  t.scrollTop = t.scrollHeight;
+  window.scrollTo(0, 0);
+}
+window.addEventListener('scroll', () => { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); });
+
+// the answer: light markdown (headings, lists, bold) and [n] citations as buttons that open the capture
+function render(text, sources) {
+  const byN = Object.fromEntries(sources.map(s => [s.n, s]));
+  const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\[(\d+)\]/g, (m, n) => {
+    const s = byN[n];
+    return s ? `<button class="src" data-id="${s.id}" title="${esc(`${s.app} · ${s.title} · ${s.when}`)}">${n}</button>` : '';
+  }).replace(/\[you\]/gi, '<span class="you" title="You added this; it’s not from memory">you</span>');
+  let html = '', list = false;
+  for (const line of text.split('\n')) {
+    const li = line.match(/^\s*(?:[-*•]|\d+\.)\s+(.*)/), h = line.match(/^#{1,4}\s+(.*)/);
+    if (li) { if (!list) { html += '<ul>'; list = true; } html += `<li>${inline(li[1])}</li>`; continue; }
+    if (list) { html += '</ul>'; list = false; }
+    if (h) html += `<h4>${inline(h[1])}</h4>`;
+    else if (line.trim()) html += `<p>${inline(line)}</p>`;
+  }
+  return html + (list ? '</ul>' : '');
+}
+
+// What Copy puts on the clipboard: the answer as plain text in the user's own format. The [n] and [you] marks go
+// (with whatever space is before them), and so do bold, italic and code marks; the format's own "## " headings and
+// "- " lines stay.
+function forPaste(text) {
+  return text
+    .replace(/\s*\[(\d+|you)\]/gi, '')
+    .replace(/\*\*(.+?)\*\*|__(.+?)__/g, '$1$2')
+    .replace(/(^|[^*\w])\*(?!\s)([^*\n]+?)\*(?!\w)/g, '$1$2')
+    .replace(/`([^`\n]+)`/g, '$1')
+    .replace(/[ \t]+$/gm, '');
+}
+
+// The latest answer into `out`, with Copy and Save as ask; its cited captures come along with a follow-up.
+function answer(out, text, sources, label) {
+  keep = sources.filter(s => text.includes(`[${s.n}]`)).map(s => s.id);
+  out.innerHTML = render(text, sources) + `<div class="foot"><button class="copy">Copy</button><button class="keep">Save as ask</button><span style="flex:1"></span>${sources.length ? `From ${sources.length} ${sources.length === 1 ? 'window' : 'windows'}` : ''}</div>`;
+  // copied as plain text, ready to paste
+  const copy = out.querySelector('.copy');
+  copy.onclick = async () => { await navigator.clipboard.writeText(forPaste(text)); copy.textContent = 'Copied'; };
+  out.querySelector('.keep').onclick = () => saveForm(out, label);
+}
+
+const bubble = (question, label) => `<div class="q" title="${esc(label ? question : '')}">${esc(label || question)}</div>`;
+
+// Past chats (kept on this PC for 30 days): the list replaces the chat until one is picked
+async function pastChats() {
+  if (busy) return;
+  // the chat on screen is already kept (it's in the list); asking from here starts a new one
+  chat = []; keep = []; chatId = null;
+  $('q').placeholder = "Ask about anything you've seen…";
+  let list;
+  try { list = await invoke('ask_chats'); } catch (e) { list = []; }
+  $('thread').innerHTML = `<div class="hist"><div class="hist-head">Past chats<span>kept on this PC for 30 days</span></div>`
+    + (list.length ? list.map(c => `<button type="button" class="hist-item" data-chat="${c.chat}"><span>${esc(c.title)}</span><small>${esc(c.when)}${c.turns > 1 ? ` · ${c.turns} messages` : ''}</small></button>`).join('')
+      : '<div class="err">No chats yet.</div>') + '</div>';
+}
+
+// A past chat, opened again to carry on
+async function openChat(id) {
+  let turns;
+  try { turns = await invoke('ask_chat', { chat: id }); } catch (e) { return; }
+  if (!turns.length) return pastChats();
+  chat = turns.map(t => [t.question, t.answer]);
+  chatId = id;
+  $('thread').innerHTML = turns.map((t, i) => bubble(t.question, t.label) + `<div class="a">${i < turns.length - 1 ? render(t.answer, t.sources) : ''}</div>`).join('');
+  const last = turns[turns.length - 1];
+  const out = $('thread').lastElementChild;
+  answer(out, last.answer, last.sources, last.label);
+  toEnd();
+  $('q').placeholder = 'Ask a follow-up…'; $('q').focus();
+}
+
+// `label`: what the bubble shows instead of the request (a saved ask's name)
+async function send(question, label) {
+  question = question.trim();
+  if (!question || busy) return;
+  busy = true; $('send').disabled = true; $('q').value = '';
+  // the new turn goes under the earlier ones; only the latest answer keeps its Copy button
+  $('thread').querySelectorAll('.foot').forEach(f => f.remove());
+  $('thread').querySelector('.hist')?.remove(); // asking from the past-chats list starts a new chat
+  $('thread').insertAdjacentHTML('beforeend', bubble(question, label) + `<div class="a"><span class="dots"><i></i><i></i><i></i></span></div>`);
+  const out = $('thread').lastElementChild;
+  toEnd();
+  try {
+    const a = await invoke('ask_question', { question, history: chat, keep, chat: chatId, label: label || null });
+    chat.push([question, a.text]);
+    if (a.chat) chatId = a.chat;
+    answer(out, a.text, a.sources, label);
+  } catch (e) {
+    out.innerHTML = `<div class="err">${esc(String(e))}</div>`;
+  }
+  toEnd();
+  busy = false; $('q').placeholder = 'Ask a follow-up…'; $('q').focus();
+}
+
+// "Save as ask": a name and the request, filled in from this chat (its questions, follow-ups included) and editable
+function saveForm(out, label) {
+  if (out.querySelector('.saveask')) return;
+  const asked = chat.map(([q]) => q);
+  out.insertAdjacentHTML('beforeend', `<div class="saveask">
+    <input class="sa-name" maxlength="40" aria-label="Button name" placeholder="Button name, e.g. Daily report">
+    <textarea class="sa-text" rows="4" aria-label="What it asks"></textarea>
+    <div class="foot"><button class="sa-ok">Save</button><button class="sa-no">Cancel</button><span class="sa-msg"></span></div></div>`);
+  const f = out.querySelector('.saveask');
+  f.querySelector('.sa-name').value = (label || asked[0] || '').replace(/^★ /, '').slice(0, 40);
+  f.querySelector('.sa-text').value = asked.join('\n');
+  toEnd();
+  f.querySelector('.sa-name').focus({ preventScroll: true });
+  f.querySelector('.sa-no').onclick = () => f.remove();
+  f.querySelector('.sa-ok').onclick = async () => {
+    try {
+      saved = await invoke('ask_saved_set', { index: null, name: f.querySelector('.sa-name').value, text: f.querySelector('.sa-text').value });
+      chips(); f.remove();
+    } catch (e) { f.querySelector('.sa-msg').textContent = String(e); }
+  };
+}
+
+// the built-in asks, then the saved ones: one click sends them
+function chips() {
+  $('chips').innerHTML = `<button type="button" data-ask="What did I do today?">What did I do today?</button>
+    <button type="button" data-ask="What's unfinished?">What's unfinished?</button>`
+    + saved.map((a, i) => `<button type="button" class="saved" data-i="${i}" title="${esc(a.text)}">★ ${esc(a.name)}</button>`).join('');
+}
+$('chips').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.i) { const a = saved[+b.dataset.i]; send(a.text, '★ ' + a.name); } else send(b.dataset.ask);
+});
+$('thread').addEventListener('click', e => {
+  const b = e.target.closest('.src'), h = e.target.closest('.hist-item');
+  if (b) invoke('ask_open_capture', { id: +b.dataset.id });
+  if (h) openChat(+h.dataset.chat);
+});
+$('past').onclick = pastChats;
+$('q').addEventListener('input', () => $('send').disabled = busy || !$('q').value.trim());
+$('q').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send($('q').value); } });
+$('send').onclick = () => send($('q').value);
+$('grip').addEventListener('mousedown', e => { if (e.button === 0) invoke('ask_drag'); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') invoke('ask_close'); });
+$('new').onclick = () => { chat = []; keep = []; chatId = null; $('thread').innerHTML = ''; $('q').placeholder = "Ask about anything you've seen…"; $('q').focus(); };
+$('pin').onclick = async () => {
+  const on = $('pin').getAttribute('aria-pressed') !== 'true';
+  await invoke('ask_pin', { on });
+  $('pin').setAttribute('aria-pressed', on);
+  $('pin').title = on ? 'Pinned: stays on screen. Click to unpin' : 'Pin: keep it on screen';
+};
+
+// the end-of-day note: offers a saved ask; nothing is read or sent until it's clicked
+async function note() {
+  const name = await invoke('ask_reminder'), i = saved.findIndex(a => a.name === name);
+  if (i < 0) return;
+  $('note').innerHTML = `<span>Your day's report?</span><button type="button" class="saved" id="noteGo">★ ${esc(name)}</button>
+    <button type="button" id="noteNo">Not today</button>`;
+  $('note').hidden = false;
+  $('noteGo').onclick = () => { $('note').hidden = true; send(saved[i].text, '★ ' + saved[i].name); };
+  $('noteNo').onclick = () => { $('note').hidden = true; invoke('ask_close'); };
+}
+
+window.ask = {
+  focus() { $('q').focus(); $('q').select(); },
+  async refresh() { saved = (await invoke('ask_state')).saved; chips(); note(); },
+};
+invoke('ask_state').then(s => { $('pin').setAttribute('aria-pressed', s.pinned); saved = s.saved; chips(); note(); fit(); $('q').focus(); });
+</script>
+</body></html>

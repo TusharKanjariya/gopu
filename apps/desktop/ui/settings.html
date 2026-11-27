@@ -1,0 +1,700 @@
+<!doctype html>
+<!-- Gopu settings window. OS-native look with saffron as the only brand colour (brand decision 16). -->
+<html lang="en"><head><meta charset="utf-8"><title>Gopu settings</title><style>
+  :root{color-scheme:light dark;--bg:#f3f3f3;--card:#fff;--line:#e5e5e5;--field:#fff;--fline:#d1d1d1;--text:#1b1b1b;--sub:#616161;
+    --hover:#eaeaea;--accent:#B2600B;--accent-fg:#fff;--ring:#E8891C;--ok:#107c10;--bad:#c42b1c}
+  @media (prefers-color-scheme:dark){:root{--bg:#202020;--card:#2b2b2b;--line:#3a3a3a;--field:#2f2f2f;--fline:#4a4a4a;--text:#f3f3f3;--sub:#a8a8a8;
+    --hover:#333;--accent:#E8891C;--accent-fg:#1b1b1b;--ok:#6ccb5f;--bad:#ff99a4}}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px 'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif}
+  body{display:flex}
+  nav{width:200px;padding:16px 8px;display:flex;flex-direction:column;gap:2px}
+  nav button{all:unset;position:relative;padding:9px 14px;border-radius:5px;cursor:default}
+  nav button:hover{background:var(--hover)}
+  nav button[aria-current]{background:var(--hover);font-weight:600}
+  nav button[aria-current]::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:2px;background:var(--ring)}
+  nav button:focus-visible{outline:2px solid var(--ring)}
+  main{flex:1;display:flex;flex-direction:column;background:var(--card);border-left:1px solid var(--line);border-top:1px solid var(--line);border-top-left-radius:8px;min-width:0}
+  .page{flex:1;overflow:auto;padding:24px 32px}
+  h1{margin:0 0 4px;font:600 24px 'Segoe UI Variable Display','Segoe UI',sans-serif}
+  .sub{color:var(--sub);margin:0 0 20px}
+  fieldset{border:0;padding:0;margin:0 0 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  legend{font-weight:600;margin-bottom:8px;padding:0}
+  .card{position:relative;display:block;border:1px solid var(--line);border-radius:6px;padding:10px 12px;font-weight:600}
+  .card:hover{background:var(--hover)}
+  .card small{display:block;font-weight:400;font-size:12px;color:var(--sub)}
+  .card input{position:absolute;opacity:0}
+  .card:has(input:checked){border:2px solid var(--ring);padding:9px 11px}
+  .card:has(input:focus-visible){outline:2px solid var(--ring);outline-offset:2px}
+  label.f{display:block;font-weight:600;margin:0 0 6px}
+  .row{display:flex;gap:12px}.row>div{flex:1}
+  .grp{margin-bottom:16px}
+  textarea{resize:vertical;line-height:1.4}
+  input[type=text],input[type=password],input[type=url],select,textarea{width:100%;font:inherit;color:var(--text);background:var(--field);border:1px solid var(--fline);
+    border-bottom-width:2px;border-radius:4px;padding:6px 10px;outline:0}
+  input:focus,select:focus,textarea:focus{border-bottom-color:var(--ring)}
+  .key{display:flex;gap:8px}
+  .hint{color:var(--sub);font-size:12px;margin-top:4px}
+  footer{display:flex;align-items:center;gap:10px;padding:14px 32px;border-top:1px solid var(--line)}
+  footer button{font:inherit;border-radius:4px;padding:6px 18px;border:1px solid var(--fline);background:var(--field);color:var(--text)}
+  footer button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}
+  footer button:focus-visible,.key button:focus-visible{outline:2px solid var(--ring);outline-offset:1px}
+  .key button{font:inherit;border-radius:4px;padding:0 12px;border:1px solid var(--fline);background:var(--field);color:var(--text)}
+  label.check{display:flex;align-items:center;gap:10px;font-weight:600}
+  label.check input{width:18px;height:18px;accent-color:var(--accent);margin:0}
+  label.check input:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+  button.plain{font:inherit;border-radius:4px;padding:6px 14px;border:1px solid var(--fline);background:var(--field);color:var(--text)}
+  button.plain:focus-visible{outline:2px solid var(--ring);outline-offset:1px}
+  #status{font-size:13px}#status.ok{color:var(--ok)}#status.bad{color:var(--bad)}
+  [hidden]{display:none!important}
+  /* memory pages (Search, Privacy) */
+  nav .grp{font-size:12px;color:var(--sub);padding:12px 14px 2px}
+  h2{margin:18px 0 8px;font:600 16px 'Segoe UI Variable Display','Segoe UI',sans-serif}
+  .srch{display:flex;gap:8px;margin-bottom:8px}.srch input{flex:1}.srch select{width:auto}
+  .res{padding:9px 10px;border-radius:6px;cursor:default;outline:0}
+  .res:hover,.res:focus-visible{background:var(--hover)}
+  .res .top{display:flex;gap:8px;align-items:baseline}
+  .res .ttl{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .res .snip{color:var(--sub);font-size:13px;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .app{width:18px;height:18px;border-radius:4px;display:inline-grid;place-items:center;font-size:10px;font-weight:700;color:#fff;flex:none;align-self:center}
+  mark{background:#ffe0b0;color:inherit;border-radius:2px}
+  @media (prefers-color-scheme:dark){mark{background:#6b4413}}
+  .full{white-space:pre-wrap;line-height:1.5;font-size:13px;border:1px solid var(--line);border-radius:6px;padding:12px;max-height:300px;overflow:auto;margin-top:10px}
+  .acts{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}.grow{flex:1}
+  .box{border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+  .line1{display:flex;gap:8px;align-items:center}
+  .line1 select{width:auto}
+  .item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+  button.bad{color:var(--bad)}
+  .empty{color:var(--sub);padding:18px 4px}
+  .bar{height:8px;border-radius:4px;background:var(--line);position:relative;flex:1}
+  .bar i{position:absolute;inset:0 auto 0 0;border-radius:4px;background:var(--ring)}
+  .bar s{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--sub)}
+</style></head><body>
+<nav aria-label="Settings sections">
+  <button data-page="model" aria-current="page">Model</button>
+  <button data-page="you">You</button>
+  <button data-page="keys">Gopu key</button>
+  <div class="grp">Memory</div>
+  <button data-page="search">Search</button>
+  <button data-page="people">People</button>
+  <button data-page="style">Style</button>
+  <button data-page="reminders">Reminders</button>
+  <button data-page="privacy">Privacy</button>
+  <div class="grp"></div>
+  <button data-page="about">About</button>
+</nav>
+<main>
+  <section class="page" id="model">
+    <h1>Model</h1>
+    <p class="sub">Pick who writes for Gopu. Your key stays on this computer, in Windows Credential Manager.<br>
+      When you tap the Gopu key, the text on your screen and in the field goes to this provider, and nowhere else.</p>
+    <fieldset id="providers"><legend>Provider</legend></fieldset>
+    <div class="grp" id="urlGrp"><label class="f" for="url">Server URL</label>
+      <input type="url" id="url" placeholder="http://localhost:8080/v1" spellcheck="false">
+      <div class="hint">Any OpenAI-compatible endpoint, such as llama.cpp or LM Studio.</div></div>
+    <div class="grp" id="keyGrp"><label class="f" for="key">API key</label>
+      <div class="key"><input type="password" id="key" spellcheck="false" autocomplete="off"><button type="button" id="show">Show</button></div>
+      <div class="hint" id="keyHint"></div></div>
+    <div class="row">
+      <div class="grp"><label class="f" for="modelName">Model</label><input type="text" id="modelName" spellcheck="false"></div>
+      <div class="grp"><label class="f" for="reasoning">Thinking</label>
+        <select id="reasoning"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select>
+        <div class="hint">For models that think first. More is slower.</div></div>
+    </div>
+    <div class="grp"><label class="check"><input type="checkbox" id="useMemory"> Use memory in replies</label>
+      <div class="hint">When you tap the Gopu key, a short summary of the windows you had open in the last 30 minutes and your recent copies goes along, masked, so replies fit what you were doing.</div></div>
+  </section>
+  <section class="page" id="you" hidden>
+    <h1>You</h1>
+    <p class="sub">So Gopu knows which messages on screen are yours.</p>
+    <div class="grp"><label class="f" for="name">Your name, as it appears in chats</label>
+      <input type="text" id="name" placeholder="Alex Morgan">
+      <div class="hint">Without it, replies can mix up who is who.</div></div>
+    <div class="grp"><label class="f" for="about">About you</label>
+      <textarea id="about" rows="4" maxlength="2000" placeholder="I'm a developer at a small agency. I mostly write to clients and teammates."></textarea>
+      <div class="hint">Your role, your work, who you usually write to. Gopu uses it as background.</div></div>
+    <div class="grp"><label class="f" for="style">Style notes</label>
+      <textarea id="style" rows="4" maxlength="2000" placeholder="Keep it short. Never use exclamation marks. Sign emails with just my first name."></textarea>
+      <div class="hint">How you like to write. Gopu follows these everywhere, unless your message asks otherwise.</div></div>
+  </section>
+  <section class="page" id="keys" hidden>
+    <h1>Gopu key</h1>
+    <p class="sub">Tap it once in any text box, and Gopu gets to work.</p>
+    <div class="grp"><label class="f" for="gkey">The Gopu key</label>
+      <select id="gkey"></select>
+      <div class="hint">Tap it on its own, without holding it down. Alt, Win and Caps Lock aren't offered, because tapping them already does something.</div></div>
+    <div class="grp"><label class="f" for="chordShow">Backup shortcut</label>
+      <div class="key"><input type="text" id="chordShow" readonly placeholder="None"><button type="button" id="record">Record</button><button type="button" id="clearChord">Clear</button></div>
+      <div class="hint" id="chordHint">For keyboards without your Gopu key, for example Ctrl + Alt + G. It needs Ctrl, Alt or Win.</div></div>
+    <div class="grp" role="radiogroup" aria-label="Ask Gopu waits"><label class="f">Ask Gopu waits</label>
+      <label class="check"><input type="radio" name="anchor" value="edge"> In a tab on the screen edge</label>
+      <label class="check"><input type="radio" name="anchor" value="taskbar"> In the taskbar: Gopu's icon by the clock</label>
+      <div class="hint">Click it, or tap the Gopu key outside a text box, to ask about anything you've seen. The tab slides up or down the edge, and follows you to the screen you're working on.</div></div>
+    <div class="grp"><label class="check"><input type="checkbox" id="autostart"> Start Gopu with Windows</label>
+      <div class="hint">So the Gopu key works as soon as you sign in.</div></div>
+  </section>
+  <section class="page" id="search" hidden>
+    <div id="list">
+      <h1>Search</h1>
+      <p class="sub">Everything Gopu read on your screen. It stays on this PC.</p>
+      <div class="srch">
+        <input type="search" id="q" placeholder="Search memory" spellcheck="false" aria-label="Search memory">
+        <select id="range" aria-label="When"><option value="any">Any time</option><option value="today">Today</option><option value="week">Last 7 days</option></select>
+        <select id="appf" aria-label="App"><option value="">All apps</option></select>
+      </div>
+      <div class="hint" id="count"></div>
+      <div id="results"></div>
+    </div>
+    <div id="detail" hidden></div>
+  </section>
+  <section class="page" id="people" hidden>
+    <h1>People</h1>
+    <p class="sub">Who you write to often. Gopu uses this only to get names and facts right, never to bring things up.</p>
+    <div style="display:flex;gap:18px;align-items:flex-start">
+      <div id="plist" style="width:190px;flex:none"></div>
+      <div id="ppage" class="grow"></div>
+    </div>
+  </section>
+  <section class="page" id="style" hidden>
+    <h1>Style</h1>
+    <p class="sub">What Gopu learned about how you write, from your requests and from how you edit its text.</p>
+    <h2>How often you send Gopu's text unchanged</h2>
+    <div id="kept"></div>
+    <h2>Rules Gopu follows</h2>
+    <div id="rules"></div>
+    <div class="hint">Your own style notes (You page) always win over these. Tell Gopu a lasting preference in any text box,
+      for example "never use emojis", and it lands here.</div>
+    <h2>Saved asks</h2>
+    <div id="asks"></div>
+    <div class="hint">The ★ buttons in the Ask Gopu box. Save one with "Save as ask" under any answer, for example your
+      daily work report in your own format.</div>
+  </section>
+  <section class="page" id="reminders" hidden>
+    <h1>Reminders</h1>
+    <p class="sub">Notes Gopu shows at a time you pick. Nothing is read or sent until you click one.</p>
+    <h2>End-of-day reminder</h2>
+    <div class="item"><label><input type="checkbox" id="remOn"> On weekdays at</label>
+      <input type="time" id="remAt" value="18:00" aria-label="Reminder time"> offer <select id="remAsk" aria-label="Saved ask"></select></div>
+    <div class="hint">Offers one of your saved asks (Style page), such as your daily report, in the Ask Gopu box. It
+      skips days with nothing in memory.</div>
+  </section>
+  <section class="page" id="privacy" hidden>
+    <h1>Privacy</h1>
+    <p class="sub">What Gopu remembers, and what it never touches.</p>
+    <h2>Memory</h2>
+    <div class="box">
+      <div class="line1"><b id="memState" class="grow"></b><span id="memBtns" class="line1"></span></div>
+      <div class="hint">Passwords, sign-in and payment pages, banks, health sites, password managers and private windows are never captured. Card numbers, keys and ID numbers are masked before anything is saved.</div>
+    </div>
+    <h2>Never capture</h2>
+    <div class="box">
+      <div id="ignoreList"></div>
+      <div class="key" style="margin-top:8px"><input type="text" id="ignoreIn" placeholder="An app or a site, e.g. Signal or web.whatsapp.com" spellcheck="false" aria-label="App or site"><button type="button" id="ignoreAdd">Add</button></div>
+      <div class="hint" id="ignoreMsg">Adding one also forgets what Gopu already remembers from it.</div>
+    </div>
+    <h2>Keep and forget</h2>
+    <div class="box">
+      <div class="line1"><label for="keep" class="grow">Keep memory for</label>
+        <select id="keep"><option value="7">1 week</option><option value="30">1 month</option><option value="90">3 months</option><option value="0">Forever</option></select></div>
+      <div class="acts" id="forgetRow"></div>
+      <div class="hint" id="sizeLine"></div>
+    </div>
+    <h2>What leaves this PC</h2>
+    <div class="box"><div class="hint" style="margin:0">Only what you ask for: a tap sends its request to your model. In the background, Gopu sends one thing, the daily check for updates (About page), which carries nothing about you.</div></div>
+    <h2>Other AI apps</h2>
+    <div class="box">
+      <label class="check"><input type="checkbox" id="mcpOn"> Let other AI apps read my memory</label>
+      <div class="hint">Through MCP, read-only: search, recent windows, people pages and style rules, all masked. The clipboard is never shared. Nothing is set up in other apps for you; copy the setup into the app you choose.</div>
+      <div id="mcpMore" hidden>
+        <div class="acts"><span class="hint" style="margin:0">Copy setup for:</span>
+          <button class="plain" data-mcp="code">Claude Code</button><button class="plain" data-mcp="desktop">Claude Desktop</button>
+          <button class="plain" data-mcp="cursor">Cursor</button><button class="plain" data-mcp="json">Other (JSON)</button></div>
+        <div class="hint" id="mcpHint"></div>
+        <div id="mcpClients" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </section>
+  <section class="page" id="about" hidden>
+    <h1>About</h1>
+    <p class="sub">Gopu <span id="version"></span>. Open source under the Apache-2.0 licence.</p>
+    <h2>Updates</h2>
+    <div class="box">
+      <div class="line1"><span id="updLine" class="grow" role="status" aria-live="polite"></span><button type="button" class="plain" id="updBtn">Check now</button></div>
+      <label class="check" style="margin-top:8px"><input type="checkbox" id="updAuto"> Check for updates once a day</label>
+      <div class="hint">The check asks github.com whether a newer Gopu exists; nothing about you or your memory goes with it. Nothing installs until you choose to.</div>
+    </div>
+    <h2>Logs</h2>
+    <div class="grp"><label class="check"><input type="checkbox" id="debug"> Keep a log of the last tap</label>
+      <div class="hint">Saves what Gopu read and wrote on your last tap, so a bug can be reported. It includes text from your screen, so leave it off unless you need it. Turning it off deletes the log.</div></div>
+    <div class="grp"><button type="button" class="plain" id="openLogs">Open logs folder</button></div>
+  </section>
+  <footer>
+    <button class="primary" id="save">Save</button>
+    <button id="test">Test</button>
+    <span id="status" role="status" aria-live="polite"></span>
+    <span id="memline" class="hint" style="margin:0"></span>
+  </footer>
+</main>
+<script>
+const invoke = window.__TAURI__.core.invoke;
+const $ = id => document.getElementById(id);
+let data;
+
+// sections; memory pages act at once, so they have no Save, and show the memory line instead
+const MEMORY_PAGES = ['search', 'people', 'style', 'reminders', 'privacy'];
+function showPage(id) {
+  // look among the pages only: the About page shares its id with the You page's "About you" box
+  if (!document.querySelector(`section.page[id="${CSS.escape(id || '')}"]`)) id = 'model';
+  document.querySelectorAll('nav button').forEach(x => x.toggleAttribute('aria-current', x.dataset.page === id));
+  document.querySelectorAll('.page').forEach(p => p.hidden = p.id !== id);
+  const mem = MEMORY_PAGES.includes(id);
+  $('test').hidden = id !== 'model';
+  $('save').hidden = mem;
+  $('memline').hidden = !mem;
+  status('');
+  if (mem) loadMemory();
+  if (id === 'search') { closeCapture(); runSearch(); $('q').focus(); }
+  if (id === 'people') loadPeople();
+  if (id === 'style') { loadStyle(); loadAsks(); }
+  if (id === 'reminders') loadReminders();
+  if (id === 'privacy') loadMcp();
+  if (id === 'about') loadUpdate(data && !data.saved.updates_off);
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => showPage(b.dataset.page));
+
+// Updates (About page): opening the page checks, unless daily checks are off; "Check now" always does
+async function loadUpdate(check) {
+  const st = await invoke('update_state');
+  const show = v => {
+    $('updLine').textContent = v ? `Gopu ${v} is ready.` : `You have the latest Gopu.`;
+    $('updBtn').textContent = v ? 'Update and restart' : 'Check now';
+    $('updBtn').onclick = v ? () => { $('updLine').textContent = 'Downloading…'; $('updBtn').disabled = true; invoke('update_install'); } : () => loadUpdate(true);
+    $('updBtn').disabled = false;
+  };
+  if (st.failed) { show(st.ready); $('updLine').textContent = `The update didn't install: ${st.failed}`; return; }
+  if (st.ready || !check) { show(st.ready); if (!st.ready) $('updLine').textContent = ''; return; }
+  $('updLine').textContent = 'Checking…'; $('updBtn').disabled = true;
+  try { show(await invoke('update_check')); }
+  catch (e) { show(null); $('updLine').textContent = `Couldn't check: ${e}`; }
+}
+
+const current = () => document.querySelector('input[name=provider]:checked').value;
+const preset = id => data.providers.find(p => p.id === id);
+
+function status(text, kind = '') { $('status').textContent = text; $('status').className = kind; }
+
+// a provider's fields: its saved values if it's the saved provider, else its preset
+function showProvider(id) {
+  const p = preset(id), mine = (data.saved.provider || 'groq') === id;
+  $('modelName').value = (mine && data.saved.model) || p.model;
+  $('modelName').placeholder = p.model || 'model name';
+  $('url').value = (mine && data.saved.base_url) || '';
+  $('urlGrp').hidden = id !== 'custom';
+  $('keyGrp').hidden = id === 'ollama';
+  $('key').value = '';
+  $('key').placeholder = p.has_key ? 'Saved. Paste a new key to replace it.' : (p.needs_key ? 'Paste your API key' : 'Optional');
+  $('keyHint').textContent = p.has_key ? '' : (p.needs_key ? `Get one from ${p.name}'s website.` : '');
+  status('');
+}
+
+function collect() {
+  const id = current(), blank = v => v.trim() || null;
+  return {
+    saved: {
+      provider: id,
+      base_url: id === 'custom' ? blank($('url').value) : null,
+      model: blank($('modelName').value),
+      reasoning: $('reasoning').value,
+      user_name: blank($('name').value),
+      about: blank($('about').value),
+      style: blank($('style').value),
+      key: +$('gkey').value,
+      chord,
+      debug: $('debug').checked,
+      recall_off: !$('useMemory').checked,
+      autostart_off: !$('autostart').checked,
+      updates_off: !$('updAuto').checked,
+      ask_anchor: document.querySelector('input[name=anchor]:checked')?.value === 'taskbar' ? 'taskbar' : null,
+    },
+    key: $('key').value.trim() || null, // blank keeps the saved key
+  };
+}
+
+function problem({ saved, key }) {
+  const p = preset(saved.provider);
+  if (saved.provider === 'custom' && !saved.base_url) return 'Add the server URL first.';
+  if (p.needs_key && !key && !p.has_key) return `Add your ${p.name} key first.`;
+  if (!saved.model) return 'Add a model name first.';
+}
+
+$('save').onclick = async () => {
+  const form = collect(), bad = problem(form);
+  if (bad) return status(bad, 'bad');
+  try {
+    await invoke('settings_save', form);
+    data = await invoke('settings_get');
+    showProvider(current());
+    status('Saved. Your next tap uses it.', 'ok');
+  } catch (e) { status(`Couldn't save: ${e}`, 'bad'); }
+};
+
+$('test').onclick = async () => {
+  const form = collect(), bad = problem(form);
+  if (bad) return status(bad, 'bad');
+  status('Testing…');
+  $('test').disabled = true;
+  try { status(`Connected, answered in ${await invoke('settings_test', form)} ms. Save to use it.`, 'ok'); }
+  catch (e) { status(`Didn't connect: ${e}`, 'bad'); }
+  $('test').disabled = false;
+};
+
+// the backup shortcut: modifier flags as RegisterHotKey takes them (Alt 1, Ctrl 2, Shift 4, Win 8) plus a key code
+let chord = null, recording = false;
+const MODS = [[2, 'Ctrl'], [1, 'Alt'], [4, 'Shift'], [8, 'Win']];
+function codeToVk(code) {
+  let m;
+  if ((m = code.match(/^Key([A-Z])$/))) return m[1].charCodeAt(0);
+  if ((m = code.match(/^Digit([0-9])$/))) return 0x30 + +m[1];
+  if ((m = code.match(/^F([0-9]{1,2})$/)) && +m[1] >= 1 && +m[1] <= 12) return 0x6F + +m[1];
+  if (code === 'Space') return 0x20;
+}
+function vkName(vk) {
+  if (vk === 0x20) return 'Space';
+  if (vk >= 0x70 && vk <= 0x7B) return 'F' + (vk - 0x6F);
+  return String.fromCharCode(vk);
+}
+function showChord() {
+  $('chordShow').value = chord ? [...MODS.filter(([b]) => chord.mods & b).map(([, n]) => n), vkName(chord.vk)].join(' + ') : '';
+}
+$('record').onclick = () => {
+  recording = true;
+  $('chordShow').value = '';
+  $('chordShow').placeholder = 'Press the shortcut… (Esc to cancel)';
+  $('record').disabled = true;
+};
+$('clearChord').onclick = () => { chord = null; showChord(); };
+window.addEventListener('keydown', e => {
+  if (!recording) return;
+  e.preventDefault();
+  const done = () => { recording = false; $('record').disabled = false; $('chordShow').placeholder = 'None'; showChord(); };
+  if (e.code === 'Escape') return done();
+  const vk = codeToVk(e.code);
+  if (!vk) return; // a modifier on its own: keep waiting for the key
+  const mods = (e.ctrlKey ? 2 : 0) | (e.altKey ? 1 : 0) | (e.shiftKey ? 4 : 0) | (e.metaKey ? 8 : 0);
+  if (!(mods & 11)) return status('The shortcut needs Ctrl, Alt or Win.', 'bad');
+  chord = { mods, vk };
+  status('');
+  done();
+});
+
+$('openLogs').onclick = async () => {
+  try { await invoke('open_logs'); } catch (e) { status(`Couldn't open it: ${e}`, 'bad'); }
+};
+
+$('show').onclick = () => {
+  const hide = $('key').type === 'text';
+  $('key').type = hide ? 'password' : 'text';
+  $('show').textContent = hide ? 'Show' : 'Hide';
+};
+
+// ---------------------------------------------------------------- memory
+const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const appName = a => a.replace(/\.exe$/i, '');
+const marked = s => esc(s).replace(/\x01/g, '<mark>').replace(/\x02/g, '</mark>');
+const KEEP = { 7: '1 week', 30: '1 month', 90: '3 months', 0: 'forever' };
+function badge(app) {
+  let h = 0; for (const c of app) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return `<span class="app" style="background:hsl(${h} 55% 42%)">${esc(appName(app)[0] || '?').toUpperCase()}</span>`;
+}
+function when(t) {
+  const d = new Date(t * 1000), now = new Date(), y = new Date(now - 864e5);
+  const hm = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (d.toDateString() === now.toDateString()) return `Today ${hm}`;
+  if (d.toDateString() === y.toDateString()) return `Yesterday ${hm}`;
+  return `${d.toLocaleDateString([], { day: 'numeric', month: 'short' })} ${hm}`;
+}
+const size = b => b > 1e9 ? `${(b / 1e9).toFixed(1)} GB` : b > 1e6 ? `${Math.round(b / 1e6)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`;
+const err = e => status(`Couldn't do that: ${e}`, 'bad');
+
+let mem = null;
+async function loadMemory() {
+  try { mem = await invoke('memory_state'); } catch (e) { return err(e); }
+  const since = mem.since ? ` · since ${new Date(mem.since * 1000).toLocaleDateString([], { day: 'numeric', month: 'short' })}` : '';
+  const state = { on: 'Gopu is remembering', paused: `Memory paused until ${mem.until_text}`, off: 'Memory is off' }[mem.state];
+  $('memline').textContent = `${state} · Memory: ${size(mem.bytes)}${since} · kept for ${KEEP[mem.keep_days]}`;
+  // Privacy page
+  $('memState').textContent = state;
+  $('memBtns').innerHTML = {
+    on: `<span class="hint" style="margin:0">Pause:</span><button class="plain" data-p="15m">15 min</button><button class="plain" data-p="1h">1 hour</button>
+         <button class="plain" data-p="tomorrow">Until tomorrow</button><button class="plain" id="memOff">Turn off</button>`,
+    paused: `<button class="plain" data-p="resume">Resume</button>`,
+    off: `<button class="plain" id="memOn">Turn on</button>`,
+  }[mem.state];
+  document.querySelectorAll('[data-p]').forEach(b => b.onclick = () => setMemory({ pause: b.dataset.p }));
+  if ($('memOff')) $('memOff').onclick = () => setMemory({ on: false });
+  if ($('memOn')) $('memOn').onclick = () => setMemory({ on: true });
+  $('ignoreList').innerHTML = mem.ignore.length
+    ? mem.ignore.map(e => `<div class="item"><span class="grow">${esc(e.replace(/\.exe$/, ''))}</span><button class="plain" data-un="${esc(e)}">Remove</button></div>`).join('')
+    : '<div class="hint" style="margin:0 0 4px">Nothing yet. Add apps or sites you never want remembered.</div>';
+  document.querySelectorAll('[data-un]').forEach(b => b.onclick = async () => {
+    try { await invoke('memory_ignore', { entry: b.dataset.un, add: false, confirm: false }); loadMemory(); } catch (e) { err(e); }
+  });
+  $('keep').value = mem.keep_days;
+  $('sizeLine').textContent = `Memory: ${size(mem.bytes)}${since} · kept for ${KEEP[mem.keep_days]}`;
+  forgetButtons();
+  // Search page: the app filter
+  const pick = $('appf').value;
+  $('appf').innerHTML = '<option value="">All apps</option>' + mem.apps.map(a => `<option value="${esc(a)}">${esc(appName(a))}</option>`).join('');
+  $('appf').value = mem.apps.includes(pick) ? pick : '';
+}
+async function setMemory(change) {
+  try { await invoke('memory_set', { on: null, pause: null, keepDays: null, ...change }); } catch (e) { return err(e); }
+  loadMemory();
+}
+$('keep').onchange = () => setMemory({ keepDays: +$('keep').value });
+
+function forgetButtons() {
+  $('forgetRow').innerHTML = `<button class="plain" data-f="hour">Forget the last hour</button><button class="plain" data-f="today">Forget today</button>
+    <span class="grow"></span><button class="plain bad" id="forgetAll">Forget everything…</button>`;
+  document.querySelectorAll('[data-f]').forEach(b => b.onclick = () => forget(b.dataset.f));
+  $('forgetAll').onclick = () => {
+    $('forgetRow').innerHTML = `<span class="grow">Forget everything Gopu remembers? This can't be undone.</span>
+      <button class="plain" id="no">Cancel</button><button class="plain bad" id="yes">Forget everything</button>`;
+    $('no').onclick = forgetButtons;
+    $('yes').onclick = () => forget('all');
+  };
+}
+async function forget(what, id = null) {
+  try {
+    const n = await invoke('memory_forget', { what, id });
+    status(`Forgotten for good (${n} ${n === 1 ? 'capture' : 'captures'}).`, 'ok');
+  } catch (e) { err(e); }
+  loadMemory();
+}
+
+$('ignoreAdd').onclick = () => ignore($('ignoreIn').value, () => { $('ignoreIn').value = ''; });
+$('ignoreIn').onkeydown = e => { if (e.key === 'Enter') $('ignoreAdd').click(); };
+// asks first: says what it covers and how much it forgets, then adds it. `where` shows the question (default: under the box).
+async function ignore(input, done, where = $('ignoreMsg')) {
+  let r;
+  try { r = await invoke('memory_ignore', { entry: input, add: true, confirm: false }); } catch (e) { return err(e); }
+  const name = r.entry.replace(/\.exe$/, ''), keep = where.innerHTML;
+  where.innerHTML = `<div class="acts"><span class="grow">Never capture <b>${esc(name)}</b>${r.count ? ` and forget the ${r.count} ${r.count === 1 ? 'capture' : 'captures'} from it` : ''}?</span>
+    <button class="plain" id="igNo">Cancel</button><button class="plain bad" id="igYes">${r.count ? 'Forget and ignore' : 'Ignore'}</button></div>`;
+  $('igNo').onclick = () => { where.innerHTML = keep; };
+  $('igYes').onclick = async () => {
+    try { await invoke('memory_ignore', { entry: input, add: true, confirm: true }); } catch (e) { return err(e); }
+    where.innerHTML = keep;
+    status(`Gopu will never capture ${name}.`, 'ok');
+    done();
+    loadMemory();
+  };
+}
+
+// Other AI apps (MCP)
+let mcp = null;
+function ago(t) {
+  const m = Math.floor((Date.now() / 1000 - t) / 60);
+  return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.floor(m / 60)} h ago` : when(t);
+}
+async function loadMcp() {
+  try { mcp = await invoke('mcp_state'); } catch (e) { return err(e); }
+  $('mcpOn').checked = mcp.on;
+  $('mcpMore').hidden = !mcp.on;
+  $('mcpHint').textContent = mcp.exe_found ? '' : `The server isn't next to Gopu yet (${mcp.exe}). Build it with cargo build -p gopu-desktop.`;
+  $('mcpClients').innerHTML = mcp.clients.length
+    ? mcp.clients.map((c, i) => `<div class="item"><span class="grow"><b>${esc(c.name)}</b> <span class="hint">read memory ${c.today} ${c.today === 1 ? 'time' : 'times'} today, last ${ago(c.last)}</span></span>
+        <label class="check" style="font-weight:400"><input type="checkbox" data-client="${i}" ${c.blocked ? '' : 'checked'}> Allowed</label></div>`).join('')
+    : '<div class="hint" style="margin:0">No app has read your memory yet.</div>';
+  document.querySelectorAll('[data-client]').forEach(b => b.onchange = async () => {
+    try { await invoke('mcp_set', { on: null, client: mcp.clients[+b.dataset.client].name, blocked: !b.checked }); } catch (e) { err(e); }
+    loadMcp();
+  });
+}
+$('mcpOn').onchange = async () => {
+  try { await invoke('mcp_set', { on: $('mcpOn').checked, client: null, blocked: null }); } catch (e) { err(e); }
+  loadMcp();
+};
+document.querySelectorAll('[data-mcp]').forEach(b => b.onclick = async () => {
+  const json = JSON.stringify({ mcpServers: { gopu: { command: mcp.exe } } }, null, 2);
+  const [text, where] = {
+    code: [`claude mcp add --scope user gopu -- "${mcp.exe}"`, 'Run it in a terminal, then restart Claude Code.'],
+    desktop: [json, 'Paste it into claude_desktop_config.json (Claude → Settings → Developer → Edit Config), then restart Claude.'],
+    cursor: [json, 'Paste it into ~/.cursor/mcp.json (Cursor Settings → MCP), then restart Cursor.'],
+    json: [json, "Paste it into your app's MCP settings."],
+  }[b.dataset.mcp];
+  try { await navigator.clipboard.writeText(text); status(`Copied. ${where}`, 'ok'); } catch (e) { err(e); }
+});
+
+// Search
+let searchTimer;
+$('q').oninput = () => { clearTimeout(searchTimer); searchTimer = setTimeout(runSearch, 200); };
+$('range').onchange = $('appf').onchange = runSearch;
+async function runSearch() {
+  let hits;
+  try { hits = await invoke('memory_search', { q: $('q').value, range: $('range').value, app: $('appf').value || null }); } catch (e) { return err(e); }
+  const q = $('q').value.trim();
+  $('count').textContent = q ? `${hits.length}${hits.length === 50 ? '+' : ''} ${hits.length === 1 ? 'result' : 'results'}` : (hits.length ? 'Most recent' : '');
+  $('results').innerHTML = hits.map(h => `<div class="res" tabindex="0" data-id="${h.id}">
+      <div class="top">${badge(h.app)}<span class="ttl">${esc(h.title || appName(h.app))}</span><span class="hint" style="margin:0">${when(h.last_seen)}</span></div>
+      <div class="snip">${h.site ? `<span>${esc(h.site)}</span> · ` : ''}${marked(h.snippet.replace(/\s+/g, ' '))}</div></div>`).join('')
+    || `<div class="empty">${q ? `Nothing found for “${esc(q)}”.` : 'Nothing remembered yet. Gopu fills this in as you work.'}</div>`;
+  document.querySelectorAll('.res').forEach(r => {
+    r.onclick = () => openCapture(+r.dataset.id);
+    r.onkeydown = e => { if (e.key === 'Enter') openCapture(+r.dataset.id); };
+  });
+}
+function closeCapture() { $('detail').hidden = true; $('list').hidden = false; }
+async function openCapture(id) {
+  let c;
+  try { c = await invoke('memory_get', { id }); } catch (e) { return err(e); }
+  const words = $('q').value.trim().split(/\s+/).filter(w => w.length > 1).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const re = words.length && new RegExp(`(${words.join('|')})`, 'gi');
+  const text = esc(c.text), host = c.site ? c.site.split('/')[0] : null, target = host || c.app;
+  $('list').hidden = true;
+  $('detail').hidden = false;
+  $('detail').innerHTML = `<button class="plain" id="back">← Results</button>
+    <h1 style="margin-top:14px">${esc(c.title || appName(c.app))}</h1>
+    <div class="hint">${esc(appName(c.app))}${c.site ? ` · ${esc(c.site)}` : ''} · seen ${when(c.first_seen)}${c.last_seen - c.first_seen > 60 ? ` to ${when(c.last_seen).replace(/^(Today|Yesterday) /, '')}` : ''}</div>
+    <div class="full">${re ? text.replace(re, '<mark>$1</mark>') : text}</div>
+    <div class="hint">Placeholders like [card] or [key] stand in for secrets Gopu never stores.</div>
+    <div id="dActs"><div class="acts"><button class="plain" id="copy">Copy text</button><button class="plain bad" id="forget1">Forget this</button>
+      <span class="grow"></span><button class="plain" id="never">Never capture ${esc(appName(target))}</button></div></div>`;
+  $('back').onclick = () => { closeCapture(); runSearch(); };
+  $('copy').onclick = () => navigator.clipboard.writeText(c.text).then(() => status('Copied.', 'ok'), e => err(e));
+  $('forget1').onclick = async () => { await forget('one', id); closeCapture(); runSearch(); };
+  $('never').onclick = () => ignore(target, () => { closeCapture(); runSearch(); }, $('dActs'));
+}
+
+// Style
+// Saved asks (the Ask Gopu box's ★ buttons): edit the name and the request, or delete
+async function loadAsks(list) {
+  if (!list) { try { list = (await invoke('ask_state')).saved; } catch (e) { return err(e); } }
+  $('asks').innerHTML = list.length ? list.map((a, i) => `<div class="item" data-ai="${i}" style="align-items:flex-start">
+      <div class="grow"><input type="text" value="${esc(a.name)}" maxlength="40" aria-label="Button name" style="font-weight:600;margin-bottom:4px">
+        <textarea rows="3" aria-label="What it asks">${esc(a.text)}</textarea></div>
+      <button class="plain" data-act="save">Save</button><button class="plain bad" data-act="del">Delete</button></div>`).join('')
+    : '<div class="empty">No saved asks yet.</div>';
+  document.querySelectorAll('[data-ai]').forEach(row => {
+    const index = +row.dataset.ai;
+    row.querySelector('[data-act=save]').onclick = async () => {
+      try { loadAsks(await invoke('ask_saved_set', { index, name: row.querySelector('input').value, text: row.querySelector('textarea').value })); status('Saved.', 'ok'); } catch (e) { err(e); }
+    };
+    row.querySelector('[data-act=del]').onclick = async () => {
+      try { loadAsks(await invoke('ask_saved_delete', { index })); status('Ask deleted.', 'ok'); } catch (e) { err(e); }
+    };
+  });
+}
+
+// the end-of-day reminder: a time and one of the saved asks; off unless ticked
+async function loadReminders() {
+  let st;
+  try { st = await invoke('ask_state'); } catch (e) { return err(e); }
+  const list = st.saved, r = st.reminder;
+  $('remAsk').innerHTML = list.map(a => `<option>${esc(a.name)}</option>`).join('');
+  if (r) { $('remAsk').value = r.ask; $('remAt').value = String(r.at / 60 | 0).padStart(2, '0') + ':' + String(r.at % 60).padStart(2, '0'); }
+  $('remOn').checked = !!r && list.some(a => a.name === r.ask);
+  $('remOn').disabled = !list.length;
+}
+['remOn', 'remAt', 'remAsk'].forEach(id => $(id).onchange = async () => {
+  const [h, m] = $('remAt').value.split(':').map(Number), on = $('remOn').checked && $('remAt').value;
+  try { await invoke('ask_reminder_set', { at: on ? h * 60 + m : null, ask: $('remAsk').value }); status(on ? 'Reminder on.' : 'Reminder off.', 'ok'); } catch (e) { err(e); }
+});
+
+async function loadStyle() {
+  let st;
+  try { st = await invoke('style_state'); } catch (e) { return err(e); }
+  $('kept').innerHTML = st.kept.length ? st.kept.map(k => `<div class="line1" style="margin:6px 0">
+      <span style="width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(appName(k.surface))}</span>
+      <div class="bar"><i style="width:${k.pct}%"></i>${k.before_n ? `<s style="left:${k.before_pct}%" title="last month"></s>` : ''}</div>
+      <b style="width:44px;text-align:right">${k.pct}%</b>
+      <span class="hint" style="margin:0;width:170px">${k.n} sent${k.before_n ? `, ${k.before_pct}% last month` : ''}</span></div>`).join('')
+      + '<div class="hint">The tick is the 30 days before. Higher means Gopu writes more like you.</div>'
+    : '<div class="empty">Nothing yet. Each time you send something Gopu wrote, it counts here: unchanged, edited or replaced.</div>';
+  $('rules').innerHTML = st.rules.length ? st.rules.map(r => `<div class="item" data-rid="${r.id}">
+      <input type="checkbox" ${r.on ? 'checked' : ''} aria-label="On" style="accent-color:var(--accent)">
+      <div class="grow"><input type="text" value="${esc(r.rule)}" aria-label="Rule" style="border:0;background:transparent;padding:2px 0">
+        <div class="hint" style="margin:0">${r.scope ? esc(appName(r.scope)) : 'Everywhere'} · ${r.source === 'instruction' ? 'you said it' : 'learned from your edits'}${r.edited ? ' · edited by you' : ''}</div></div>
+      <button class="plain" data-act="save">Save</button><button class="plain bad" data-act="del">Delete</button></div>`).join('')
+    : '<div class="empty">No rules yet.</div>';
+  document.querySelectorAll('[data-rid]').forEach(row => {
+    const id = +row.dataset.rid, text = row.querySelector('input[type=text]'), on = row.querySelector('input[type=checkbox]');
+    const save = async () => {
+      try { await invoke('style_save', { id, rule: text.value, on: on.checked }); status('Saved.', 'ok'); } catch (e) { err(e); }
+      loadStyle();
+    };
+    row.querySelector('[data-act=save]').onclick = save;
+    on.onchange = save;
+    row.querySelector('[data-act=del]').onclick = async () => {
+      try { await invoke('style_delete', { id }); status('Rule deleted.', 'ok'); } catch (e) { err(e); }
+      loadStyle();
+    };
+  });
+}
+
+// People
+let people = [], personId = null;
+async function loadPeople() {
+  try { people = await invoke('people_list'); } catch (e) { return err(e); }
+  if (!people.some(p => p.id === personId)) personId = people[0]?.id ?? null;
+  $('plist').innerHTML = people.map(p => `<div class="res" tabindex="0" data-pid="${p.id}" style="${p.id === personId ? 'background:var(--hover)' : ''}">
+      <b>${esc(p.name)}</b><div class="hint" style="margin:0">${p.facts.length} ${p.facts.length === 1 ? 'fact' : 'facts'}${p.edited ? ' · edited by you' : ''}</div></div>`).join('');
+  document.querySelectorAll('[data-pid]').forEach(r => r.onclick = () => { personId = +r.dataset.pid; loadPeople(); });
+  const p = people.find(x => x.id === personId);
+  $('ppage').innerHTML = p ? `
+    <h2 style="margin-top:0">${esc(p.name)}</h2>
+    <div class="grp"><label class="f" for="pSum">Who they are to you</label><textarea id="pSum" rows="2">${esc(p.summary)}</textarea></div>
+    <div class="row"><div class="grp"><label class="f" for="pLang">You write to them in</label><input type="text" id="pLang" value="${esc(p.language)}"></div>
+      <div class="grp"><label class="f" for="pAli">Also known as</label><input type="text" id="pAli" value="${esc(p.aliases.join(', '))}" placeholder="Other names, comma separated"></div></div>
+    <div class="grp"><label class="f" for="pFacts">Facts</label><textarea id="pFacts" rows="6" spellcheck="false">${esc(p.facts.map(f => `${f.date} ${f.fact}`).join('\n'))}</textarea>
+      <div class="hint">One per line, starting with its date. Once you edit a page, Gopu keeps your words and only adds new facts.</div></div>
+    <div class="acts" id="pActs"><button class="plain" id="pSave">Save</button><button class="plain bad" id="pDel">Delete page</button>
+      <span class="grow"></span><button class="plain" id="pNever">Never make a page for ${esc(p.name.split(' ')[0])}</button></div>`
+    : `<div class="empty">No pages yet. After you use the Gopu key with someone on two different days, in a one-to-one chat or an email, Gopu starts a short page about them here.</div>`;
+  if (!p) return;
+  $('pSave').onclick = async () => {
+    try {
+      await invoke('people_save', { id: p.id, summary: $('pSum').value, language: $('pLang').value, aliases: $('pAli').value, facts: $('pFacts').value });
+      status('Saved. Gopu keeps your words from now on.', 'ok');
+    } catch (e) { return err(e); }
+    loadPeople();
+  };
+  const del = never => async () => {
+    try { await invoke('people_delete', { id: p.id, never }); } catch (e) { return err(e); }
+    status(never ? `Gopu won't make a page for ${p.name} again.` : 'Page deleted.', 'ok');
+    loadPeople();
+  };
+  $('pDel').onclick = del(false);
+  $('pNever').onclick = del(true);
+}
+
+(async () => {
+  data = await invoke('settings_get');
+  const saved = data.saved.provider || 'groq';
+  $('providers').insertAdjacentHTML('beforeend', data.providers.map(p => `
+    <label class="card"><input type="radio" name="provider" value="${p.id}" ${p.id === saved ? 'checked' : ''}>${p.name}
+    <small>${{ groq: 'Free tier, fast', ollama: 'Local, private', custom: 'Your own server', openrouter: 'Many models' }[p.id] || 'Your key'}</small></label>`).join(''));
+  document.querySelectorAll('input[name=provider]').forEach(r => r.onchange = () => showProvider(r.value));
+  $('reasoning').value = data.saved.reasoning || 'medium';
+  $('name').value = data.saved.user_name || '';
+  $('about').value = data.saved.about || '';
+  $('style').value = data.saved.style || '';
+  $('gkey').innerHTML = data.keys.map(k => `<option value="${k.vk}">${k.name}</option>`).join('');
+  $('gkey').value = data.keys.some(k => k.vk === data.saved.key) ? data.saved.key : data.keys[0].vk;
+  chord = data.saved.chord || null;
+  showChord();
+  $('version').textContent = data.version;
+  $('debug').checked = !!data.saved.debug;
+  $('useMemory').checked = !data.saved.recall_off;
+  $('autostart').checked = !data.saved.autostart_off;
+  $('updAuto').checked = !data.saved.updates_off;
+  document.querySelector(`input[name=anchor][value=${data.saved.ask_anchor === 'taskbar' ? 'taskbar' : 'edge'}]`).checked = true;
+  showProvider(saved);
+  // #search:123 opens a capture (a source cited in the Ask Gopu box)
+  const [page, cap] = location.hash.slice(1).split(':');
+  showPage(page);
+  if (cap) openCapture(+cap);
+})();
+</script>
+</body></html>

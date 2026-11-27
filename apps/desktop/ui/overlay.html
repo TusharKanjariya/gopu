@@ -1,0 +1,98 @@
+<!doctype html>
+<!-- The overlay: the Gopu Walk, driven by the real run (apps/desktop/src/main.rs calls window.gopu.*).
+     Art, poses, spring trunk and timings ported from prototype/gopu-key.html (brand decision 15).
+     The window spans the field's width during a run; #wrap's top edge is the line Gopu stands on (y = BORDER_Y). -->
+<html><head><meta charset="utf-8"><style>
+  html,body{margin:0;background:transparent;overflow:hidden;user-select:none;font-family:'Segoe UI',system-ui,sans-serif}
+  #wrap{position:absolute;left:0;right:0;top:70px;height:0}
+  /* Gopu's speech bubble: the only status UI */
+  .bub{position:absolute;z-index:5;white-space:nowrap;background:#fff;border:1px solid #e6d5bf;border-radius:10px 10px 10px 3px;box-shadow:0 3px 10px #0000000f;
+    padding:3px 8px;font-size:11.5px;color:#493527;opacity:0;transform:translateY(4px) scale(.92);transform-origin:0 100%;transition:opacity .18s cubic-bezier(.2,.8,.2,1),transform .22s cubic-bezier(.25,1.4,.45,1)}
+  .bub.on{opacity:1;transform:none}.bub b{color:#B2600B;font-weight:600}
+  .bub .dots i{display:inline-block;width:3px;height:3px;margin-left:2px;border-radius:50%;background:#E8891C;animation:dot 1.2s ease-in-out infinite;vertical-align:middle}
+  .bub .dots i:nth-child(2){animation-delay:.15s}.bub .dots i:nth-child(3){animation-delay:.3s}
+  @keyframes dot{0%,60%,100%{opacity:.25;transform:none}30%{opacity:1;transform:translateY(-2px)}}
+  .gopu{position:absolute;z-index:4;transition:opacity .25s cubic-bezier(.2,.8,.2,1)}.gopu.hide{opacity:0}
+  .trk{position:absolute;left:0;top:0;z-index:3}
+  svg .ear{transform-box:fill-box;transform-origin:70% 10%;transition:transform .3s ease-in-out}
+  svg .eye{transform-box:fill-box;transform-origin:50% 50%;animation:blink 4.2s infinite}
+  svg .pupil{transition:transform .2s cubic-bezier(.2,.8,.2,1)}
+  .gopu.lk-r .pupil{transform:translate(3px,1.5px)}.gopu.lk-d .pupil{transform:translate(2px,3.5px)}.gopu.lk-u .pupil{transform:translate(1px,-3.5px)}
+  .gopu.perk .ear{transform:rotate(-16deg)}.gopu.droop .ear{transform:rotate(18deg)}
+  .gopu.twitch .ear{animation:twitch 2.4s ease-in-out infinite}
+  .gopu.walk .near,.gopu.walk .far{transform-box:fill-box;animation:step .26s infinite}.gopu.walk .far{animation-delay:.13s}
+  @keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+  @keyframes step{50%{transform:translateY(-6px)}}
+  @keyframes twitch{0%,80%,100%{transform:none}88%{transform:rotate(-8deg)}}
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.05s!important}}
+</style></head><body>
+<div id="wrap"></div>
+<script>
+const C={m:'#E8891C',dk:'#B2600B',o:'#2B170A',lt:'#FFD29A',ck:'#F06A5E'};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const wrap=document.getElementById('wrap');
+
+// ---- art (same Gopu as the prototype: side view, Burnt Saffron)
+const ear=(cx,cy,rx,ry)=>`<g class="ear"><g transform="rotate(-10 ${cx} ${cy})"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${C.m}" stroke="${C.o}" stroke-width="4"/><ellipse cx="${cx-2}" cy="${cy+2}" rx="${rx*.6}" ry="${ry*.62}" fill="${C.ck}" opacity=".5"/></g></g>`;
+const leg=(x,y,h,f)=>`<rect x="${x}" y="${y}" width="20" height="${h}" rx="9" fill="${f}" stroke="${C.o}" stroke-width="4"/><path d="M${x+5} ${y+h-6}h10" stroke="${C.lt}" stroke-width="2.5" stroke-linecap="round"/>`;
+const body=()=>`<g class="far">${leg(64,108,32,C.dk)}${leg(116,108,32,C.dk)}</g>
+  <path d="M38 92q-12 6-8 20" fill="none" stroke="${C.o}" stroke-width="3.5" stroke-linecap="round"/>
+  <ellipse cx="88" cy="96" rx="52" ry="38" fill="${C.m}" stroke="${C.o}" stroke-width="4"/>
+  <g class="near">${leg(48,112,30,C.m)}${leg(100,112,30,C.m)}</g>
+  <circle cx="136" cy="70" r="36" fill="${C.m}" stroke="${C.o}" stroke-width="4"/>${ear(122,74,19,24)}
+  <g class="eye"><g class="pupil"><circle cx="152" cy="62" r="4.5" fill="${C.o}"/><circle cx="150.5" cy="60.4" r="1.6" fill="#fff"/></g></g>
+  <ellipse cx="156" cy="84" rx="7" ry="4.5" fill="${C.ck}" opacity=".75"/><path d="M155 94q5 4 10 0" fill="none" stroke="${C.o}" stroke-width="2.5" stroke-linecap="round"/>`;
+
+// ---- Gopu: full-body rig standing on the line, trunk on a spring so it sways and flops (port of makeGopu)
+const W=50,s=W/210,O={x:95*s,y:160*s},base=-164*s,TOP=-160*s;
+const el=document.createElement('div');el.className='gopu hide';el.innerHTML=`<svg width="${W}" viewBox="0 -20 210 180" style="overflow:visible;display:block">${body()}</svg>`;
+Object.assign(el.style,{left:base+'px',top:TOP+'px',transformOrigin:`${O.x}px ${O.y}px`});
+const tk=document.createElement('div');tk.className='trk';
+tk.innerHTML=`<svg width="1" height="1" style="overflow:visible;position:absolute"><path class="to" fill="none" stroke="${C.o}" stroke-width="${17*s}" stroke-linecap="round"/><path class="ti" fill="none" stroke="${C.m}" stroke-width="${10*s}" stroke-linecap="round"/></svg>`;
+const bub=document.createElement('div');bub.className='bub';
+wrap.append(tk,el,bub);const q=c=>tk.querySelector(c);
+const g={st:'idle',cls:'',p:{x:0,lift:-10,rot:0,sx:1,sy:1},t:{x:0,lift:-10,rot:0,sx:1,sy:1},tip:null,v:{x:0,y:0},
+  say(html,dots){bub.innerHTML=html?html+(dots?'<span class="dots"><i></i><i></i><i></i></span>':''):'';bub.classList.toggle('on',!!html)},
+  root(){const p=this.p,vx=(164*s-O.x)*p.sx,vy=(102*s-O.y)*p.sy,a=p.rot*Math.PI/180;return{x:base+p.x+O.x+vx*Math.cos(a)-vy*Math.sin(a),y:TOP+p.lift+O.y+vx*Math.sin(a)+vy*Math.cos(a)}},
+  pose(o){Object.assign(this.t,o)},jump(o){Object.assign(this.t,o);Object.assign(this.p,o)},look(c){this.cls=c},
+  spot(x){return clamp(x-12,-6,innerWidth-70)},                       // stand so the trunk reaches x
+  walking(){return Math.abs(this.t.x-this.p.x)>.8},
+  goal(t){const R=this.root();return this.st==='error'?{x:R.x+1,y:R.y+14}:{x:R.x+3+Math.sin(t/900)*.8,y:R.y+13}}};
+const tick=t=>{const p=g.p,k=RM?1:.2,step=10;   // 10px/frame keeps pace with text arriving a few words at a time
+  p.x+=RM?g.t.x-p.x:clamp((g.t.x-p.x)*.15,-step,step);for(const n of['lift','rot','sx','sy'])p[n]+=(g.t[n]-p[n])*k;
+  el.className='gopu'+(g.st==='idle'?' hide':'')+(g.cls?' '+g.cls:'')+(g.walking()?' walk':'');
+  el.style.transform=`translate(${p.x.toFixed(2)}px,${p.lift.toFixed(2)}px) rotate(${p.rot.toFixed(2)}deg) scale(${p.sx.toFixed(3)},${p.sy.toFixed(3)})`;
+  const G=g.goal(t);if(!g.tip)g.tip={...G};if(RM)g.tip={...G};else{g.v.x=(g.v.x+(G.x-g.tip.x)*.16)*.7;g.v.y=(g.v.y+(G.y-g.tip.y)*.16)*.7;g.tip.x+=g.v.x;g.tip.y+=g.v.y}
+  const R=g.root(),Tp=g.tip;
+  const d=`M${R.x.toFixed(1)} ${R.y.toFixed(1)}C${(R.x+5).toFixed(1)} ${(R.y+4).toFixed(1)} ${(Tp.x+1).toFixed(1)} ${(Tp.y-6).toFixed(1)} ${Tp.x.toFixed(1)} ${Tp.y.toFixed(1)}`;
+  const vis=g.st==='idle'?'none':'';q('.to').style.display=q('.ti').style.display=vis;q('.to').setAttribute('d',d);q('.ti').setAttribute('d',d);
+  bub.style.left=(R.x-6).toFixed(1)+'px';bub.style.bottom=(3-(R.y-66*s)).toFixed(1)+'px';   // just above-right of the head
+  requestAnimationFrame(tick)};
+requestAnimationFrame(tick);
+// one happy hop: crouch, spring ~10px with ears up, land with a squash, settle
+async function hop(){g.pose({sy:.9,sx:1.07});await sleep(130);g.look('lk-r perk');
+  if(!RM){const t0=performance.now(),d=440;await new Promise(res=>{const k=t=>{const u=Math.min(1,(t-t0)/d),h=Math.sin(Math.PI*u);g.jump({lift:-10*h,sy:1+.06*h,sx:1-.04*h});u<1?requestAnimationFrame(k):res()};requestAnimationFrame(k)})}
+  g.jump({lift:0,sy:.92,sx:1.06});g.pose({sy:1,sx:1});await sleep(160);if(g.st==='done')g.look('lk-r')}
+
+// ---- the API the app drives, one call per real step of a Gopu-key run
+let hideT,run=0;
+function set(st){g.st=st;g.pose({lift:0,rot:0,sx:1,sy:1})}
+function later(ms){clearTimeout(hideT);hideT=setTimeout(()=>{set('idle');g.say('');g.jump({lift:-10})},ms)}
+window.gopu={
+  start(x){clearTimeout(hideT);run++;g.jump({x:g.spot(x),lift:-10,rot:0});set('thinking');g.look('lk-u twitch');g.say('Thinking',true)},  // soft drop by the caret
+  writing(label){set('writing');g.look('lk-d');g.say(label,true)},
+  walkTo(x){g.pose({x:g.spot(x)})},                                     // walks along the line to where the text now ends
+  async done(){const r=run;while(g.walking())await sleep(50);if(r!==run)return;
+    set('done');g.say('<b>Done!</b>');g.look('lk-r');await hop();later(1600)},
+  stopped(wrote){set('done');g.look('lk-d');g.say(wrote?'Stopped. Ctrl+Z undoes it.':'Stopped.');later(1600)},
+  error(){set('error');g.look('droop lk-d');g.pose({rot:-7});g.say('Oops. Your draft is safe.');later(2400)},
+  // a lasting preference saved as a style rule (after any writing finishes)
+  async remembered(rule){const r=run;while(g.walking())await sleep(50);if(r!==run)return;
+    const t=document.createElement('span');t.textContent=rule;
+    set('done');g.say("<b>Got it!</b> I'll remember: "+t.innerHTML);g.look('lk-r perk');await hop();later(3000)},
+  // a plain message in the bubble (text, never HTML)
+  note(text){const t=document.createElement('span');t.textContent=text;set('done');g.look('lk-d');g.say(t.innerHTML);later(Math.max(2600,text.length*55))},  // long enough to read
+};
+</script></body></html>

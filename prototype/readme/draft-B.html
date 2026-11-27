@@ -1,0 +1,76 @@
+<!doctype html><meta charset="utf-8"><base href="../../"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown-light.min.css"><style>body{background:#f6f8fa;margin:0;padding:24px}.markdown-body{box-sizing:border-box;max-width:880px;margin:0 auto;padding:32px 40px;background:#fff;border:1px solid #d0d7de;border-radius:6px}.tag{max-width:880px;margin:0 auto 8px;font:600 13px system-ui;color:#57606a}</style><div class="tag">README draft B</div><article class="markdown-body"><div class="markdown-heading"><h1 class="heading-element">
+<a target="_blank" rel="noopener noreferrer" href="assets/mascot/gopu-glyph-256.png"><img src="assets/mascot/gopu-glyph-256.png" width="36" alt="" style="max-width: 100%;"></a> Gopu</h1><a id="user-content--gopu" class="anchor" aria-label="Permalink:  Gopu" href="#-gopu"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p><strong>A writing helper that remembers what you saw, and keeps it on your PC.</strong></p>
+<p>Tap the <strong>Gopu key</strong> (Right Ctrl) in any text box. Empty: Gopu drafts a reply from the conversation on screen. A
+draft: it polishes it in your style. An instruction like <em>"turn this into a polite no"</em>: it does it. Tap outside a
+text box to ask your memory: <em>"what did I do today?"</em></p>
+<p><i>[ demo: a tap of the Gopu key, Gopu walks along the field and writes the reply ]</i></p>
+<p><strong>Windows 10 / 11 · free and open source (Apache-2.0) · 0.1.0 preview</strong> ·
+<a href="https://github.com/TusharKanjariya/gopu/releases/latest">Download</a></p>
+<div class="markdown-heading"><h2 class="heading-element">What stays on your PC</h2><a id="user-content-what-stays-on-your-pc" class="anchor" aria-label="Permalink: What stays on your PC" href="#what-stays-on-your-pc"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<table>
+<thead>
+<tr>
+<th>Stays on your PC</th>
+<th>Leaves your PC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Everything memory captures, in one local file</td>
+<td>A Gopu-key tap or a question: sent to <strong>your</strong> model, only when you ask</td>
+</tr>
+<tr>
+<td>Your people pages, style rules and chats</td>
+<td>The daily update check, which carries nothing about you</td>
+</tr>
+<tr>
+<td>Your model key, in the Windows credential store</td>
+<td>Nothing else. No account, no analytics</td>
+</tr>
+</tbody>
+</table>
+<p>Memory never reads passwords, sign-in or payment pages, banks, health sites, password managers or private windows.
+Card numbers, keys and ID numbers are masked before anything is saved. Pause it, add apps to "Never capture", or
+turn it off in <strong>Settings → Privacy</strong>.</p>
+<div class="markdown-heading"><h2 class="heading-element">Why Gopu</h2><a id="user-content-why-gopu" class="anchor" aria-label="Permalink: Why Gopu" href="#why-gopu"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>
+<strong>You can read the code</strong> of the app that reads your screen.</li>
+<li>
+<strong>Any model, your key.</strong> Groq's free tier by default; OpenAI, Anthropic, OpenRouter, or Ollama for fully local.</li>
+<li>
+<strong>It knows who you're writing to.</strong> People pages and style rules learned from your edits make replies sound like
+you, and you can read and edit every one.</li>
+<li>
+<strong>It only speaks when asked.</strong> No tours, no nudges, no model calls in the background.</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">Install</h2><a id="user-content-install" class="anchor" aria-label="Permalink: Install" href="#install"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Windows 10 or 11 (64-bit). No admin rights needed.</p>
+<ol>
+<li>Download <strong><code>Gopu_0.1.0_x64-setup.exe</code></strong> from the <a href="https://github.com/TusharKanjariya/gopu/releases/latest">latest release</a>.</li>
+<li>Windows may say <strong>"Windows protected your PC"</strong>. Click <strong>More info → Run anyway</strong>. This preview isn't code-signed
+yet; to check the download is ours, compare <code>Get-FileHash .\Gopu_0.1.0_x64-setup.exe</code> with <code>SHA256SUMS.txt</code> on
+the release page.</li>
+<li>The welcome asks for a model key. A free <a href="https://console.groq.com/keys" rel="nofollow">Groq key</a> takes a minute, or pick
+Ollama to keep everything on your PC.</li>
+<li>Click into any text box and tap <strong>Right Ctrl</strong>.</li>
+</ol>
+<p>Gopu starts with Windows and updates itself when you say so. Uninstalling keeps your memory unless you tick the box
+to delete it.</p>
+<div class="markdown-heading"><h2 class="heading-element">Use your memory in other AI apps</h2><a id="user-content-use-your-memory-in-other-ai-apps" class="anchor" aria-label="Permalink: Use your memory in other AI apps" href="#use-your-memory-in-other-ai-apps"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Turn on <strong>Settings → Privacy → Let other AI apps read my memory</strong>, then <strong>Copy setup</strong> for Claude Code, Claude Desktop,
+Cursor or any MCP client. It's read-only and masked, and nothing is added to other apps for you.</p>
+<div class="markdown-heading"><h2 class="heading-element">Build from source</h2><a id="user-content-build-from-source" class="anchor" aria-label="Permalink: Build from source" href="#build-from-source"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="highlight highlight-source-shell"><pre>cargo <span class="pl-c1">test</span> -p gopu-core
+cargo build -p gopu-desktop            <span class="pl-c"><span class="pl-c">#</span> Gopu.exe and gopu-mcp.exe</span>
+<span class="pl-c1">cd</span> apps/desktop <span class="pl-k">&amp;&amp;</span> npx @tauri-apps/cli@2 build   <span class="pl-c"><span class="pl-c">#</span> the installer</span></pre></div>
+<div class="markdown-heading"><h2 class="heading-element">Status</h2><a id="user-content-status" class="anchor" aria-label="Permalink: Status" href="#status"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>0.1.0 is a <strong>preview</strong>: Windows only, English interface, and settings or memory formats may change between 0.x
+versions. See <a href="https://github.com/TusharKanjariya/gopu/issues">known issues</a>. macOS is next.</p>
+<div class="markdown-heading"><h2 class="heading-element">Contributing</h2><a id="user-content-contributing" class="anchor" aria-label="Permalink: Contributing" href="#contributing"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Issues and pull requests are welcome; see <a href="CONTRIBUTING.md">CONTRIBUTING.md</a>. Security problems go through
+<a href="SECURITY.md">SECURITY.md</a>.</p>
+<div class="markdown-heading"><h2 class="heading-element">Licence</h2><a id="user-content-licence" class="anchor" aria-label="Permalink: Licence" href="#licence"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Code: <a href="LICENSE">Apache-2.0</a>. The Gopu name, mascot and logo are reserved: <a href="TRADEMARKS.md">TRADEMARKS.md</a>.</p>
+</article>

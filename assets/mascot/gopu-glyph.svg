@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Gopu">
+<!-- small-size glyph (16-32 px): head, ears, trunk only; heavy outline -->
+<path d="M20 18C10 12 1 18 2 30c1 10 9 14 18 10Z" fill="#FFC977" stroke="#8C603A" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M44 18c10-6 19 0 18 12-1 10-9 14-18 10Z" fill="#FFC977" stroke="#8C603A" stroke-width="3.5" stroke-linejoin="round"/>
+<circle cx="32" cy="28" r="17" fill="#FFC977" stroke="#8C603A" stroke-width="3.5"/>
+<circle cx="25" cy="26" r="2.6" fill="#493527"/><circle cx="39" cy="26" r="2.6" fill="#493527"/>
+<path d="M32 32C32 42 31 50 37 53c4 2 8-1 7-5" fill="none" stroke="#8C603A" stroke-width="10" stroke-linecap="round"/>
+<path d="M32 32C32 42 31 50 37 53c4 2 8-1 7-5" fill="none" stroke="#FFC977" stroke-width="4" stroke-linecap="round"/>
+<ellipse cx="32" cy="31" rx="2" ry="4" fill="#FFC977"/>
+</svg>

@@ -1,0 +1,146 @@
+<!doctype html>
+<!-- First-run onboarding mockups (settings-v1 ticket 08). Three directions, each as a 3-step storyboard. Throwaway.
+     Gopu is the real side-view art from apps/desktop/ui/overlay.html, trunk drawn hanging. -->
+<html><head><meta charset="utf-8"><title>Gopu onboarding mockups</title><style>
+  body{margin:0;padding:26px 30px;background:#d9d4ce;font-family:'Segoe UI',system-ui,sans-serif;color:#1b1b1b}
+  h2{margin:26px 0 4px;font:600 16px 'Segoe UI';color:#2B170A}h2:first-child{margin-top:0}
+  .why{margin:0 0 10px;font-size:12.5px;color:#5a4a3c}
+  .row{display:flex;gap:16px;flex-wrap:wrap}
+  .chip{display:inline-block;border:1px solid #e6d5bf;border-radius:12px;padding:2px 8px;font-size:10px;margin:0 3px 4px 0;background:#fff}
+  .chip.on{border:1.5px solid #E8891C;background:#FFF3E3;font-weight:600}
+  .ta{border:1px solid #d1d1d1;border-bottom:2px solid #E8891C;border-radius:4px;padding:5px 8px;font-size:10.5px;color:#999;height:46px;margin:6px 0}
+  .step{display:flex;flex-direction:column;gap:6px}
+  .cap{font-size:12px;font-weight:600;color:#5a4a3c}
+  .scr{position:relative;width:440px;height:260px;border-radius:8px;overflow:hidden;box-shadow:0 6px 20px #0003;
+    background:linear-gradient(135deg,#9db7c9,#c9b9a7)}
+  /* a fake app on the desktop: a chat window */
+  .app{position:absolute;left:24px;top:18px;width:300px;height:200px;background:#fff;border-radius:6px;box-shadow:0 2px 8px #0002;font-size:10px}
+  .app .hd{height:20px;background:#f3f3f3;border-radius:6px 6px 0 0;padding:4px 8px;color:#555}
+  .app .msg{margin:8px 10px;padding:5px 8px;background:#eef1f5;border-radius:8px;width:170px;color:#333}
+  .app .in{position:absolute;left:10px;right:10px;bottom:10px;height:24px;border:1px solid #ccc;border-radius:5px;padding:4px 7px;color:#888}
+  .task{position:absolute;left:0;right:0;bottom:0;height:22px;background:#1f1f1f;display:flex;justify-content:flex-end;align-items:center;gap:8px;padding-right:10px}
+  .task i{width:10px;height:10px;border-radius:2px;background:#666;display:block}.task i.g{background:#E8891C;border-radius:50%}
+  .dim{position:absolute;inset:0;background:#000a}
+  .bub{position:absolute;background:#fff;border:1px solid #e6d5bf;border-radius:10px 10px 10px 3px;padding:5px 9px;font-size:11px;color:#493527;
+    box-shadow:0 3px 10px #0001;line-height:1.35}
+  .bub b{color:#B2600B}
+  .box{position:absolute;background:#fff;border:1.5px solid #cfcfcf;border-radius:6px;padding:6px 9px;font-size:11.5px;color:#222}
+  .box .sel{background:#FFE2BF}
+  .caret{display:inline-block;width:1px;height:12px;background:#222;vertical-align:-2px}
+  .key{display:inline-block;white-space:nowrap;border:1px solid #bbb;border-bottom-width:3px;border-radius:5px;padding:1px 7px;font-size:10.5px;background:#fafafa;color:#333;font-weight:600}
+  .key.on{border-color:#B2600B;background:#FFE9CF;color:#7a3f05}
+  .card{position:absolute;background:#fff;border-radius:10px;box-shadow:0 10px 30px #0004;padding:16px 18px;font-size:12px}
+  .card h3{margin:0 0 4px;font:600 15px 'Segoe UI'}.card p{margin:0 0 10px;color:#555}
+  .fld{border:1px solid #d1d1d1;border-bottom:2px solid #E8891C;border-radius:4px;padding:5px 8px;font-size:12px;margin-bottom:8px;color:#222}
+  .fld.ph{color:#999}
+  .lbl{font-size:11px;font-weight:600;margin-bottom:3px}
+  .btn{display:inline-block;border-radius:4px;padding:5px 14px;font-size:12px;font-weight:600;background:#B2600B;color:#fff}
+  .btn.s{background:#fff;color:#333;border:1px solid #d1d1d1;font-weight:400}
+  .dots{display:flex;gap:5px}.dots i{width:6px;height:6px;border-radius:50%;background:#ddd}.dots i.on{background:#E8891C}
+  .pill{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:#fff;border-radius:20px;padding:6px 14px;font-size:11.5px;box-shadow:0 4px 14px #0003;white-space:nowrap}
+  /* native window (B) */
+  .win{position:absolute;inset:14px 34px 30px;background:#f3f3f3;border-radius:8px;box-shadow:0 10px 30px #0004;overflow:hidden;font-size:12px}
+  .win .bar{height:24px;display:flex;align-items:center;gap:6px;padding:0 10px;font-size:11px;background:#f3f3f3}
+  .win .bar .x{margin-left:auto;letter-spacing:10px;color:#555}
+  .win .in2{position:absolute;inset:24px 0 0;background:#fff;border-top:1px solid #e5e5e5;padding:14px 18px}
+  .win h3{margin:0 0 3px;font:600 15px 'Segoe UI'}.win p{margin:0 0 10px;color:#616161}
+  .win .foot{position:absolute;left:18px;right:18px;bottom:12px;display:flex;align-items:center;gap:8px}
+  .win .foot .dots{margin-right:auto}
+  .chk{display:flex;gap:7px;align-items:center;margin:5px 0;color:#333}.chk span{width:14px;height:14px;border-radius:50%;border:1.5px solid #bbb;display:inline-block}
+  .chk span.ok{background:#107c10;border-color:#107c10}
+  .note{font-size:11.5px;color:#5a4a3c;margin:4px 0 0;max-width:1350px}
+</style></head><body>
+<script>
+const C={m:'#E8891C',dk:'#B2600B',o:'#2B170A',lt:'#FFD29A',ck:'#F06A5E'};
+const ear=(cx,cy,rx,ry)=>`<g transform="rotate(-10 ${cx} ${cy})"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${C.m}" stroke="${C.o}" stroke-width="4"/><ellipse cx="${cx-2}" cy="${cy+2}" rx="${rx*.6}" ry="${ry*.62}" fill="${C.ck}" opacity=".5"/></g>`;
+const leg=(x,y,h,f)=>`<rect x="${x}" y="${y}" width="20" height="${h}" rx="9" fill="${f}" stroke="${C.o}" stroke-width="4"/><path d="M${x+5} ${y+h-6}h10" stroke="${C.lt}" stroke-width="2.5" stroke-linecap="round"/>`;
+// side-view Gopu standing with feet at the box's bottom edge; trunk hangs from the snout
+const gopu=(w,x,y,trunkDown=true)=>`<svg style="position:absolute;left:${x}px;top:${y-w*0.77}px;overflow:visible" width="${w}" viewBox="0 -20 210 180">
+  ${leg(64,108,32,C.dk)}${leg(116,108,32,C.dk)}
+  <path d="M38 92q-12 6-8 20" fill="none" stroke="${C.o}" stroke-width="3.5" stroke-linecap="round"/>
+  <ellipse cx="88" cy="96" rx="52" ry="38" fill="${C.m}" stroke="${C.o}" stroke-width="4"/>
+  ${leg(48,112,30,C.m)}${leg(100,112,30,C.m)}
+  <path d="M164 84C176 92 ${trunkDown?'176 130 172 150':'186 76 194 62'}" fill="none" stroke="${C.o}" stroke-width="17" stroke-linecap="round"/>
+  <path d="M164 84C176 92 ${trunkDown?'176 130 172 150':'186 76 194 62'}" fill="none" stroke="${C.m}" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="136" cy="70" r="36" fill="${C.m}" stroke="${C.o}" stroke-width="4"/>${ear(122,74,19,24)}
+  <circle cx="152" cy="62" r="4.5" fill="${C.o}"/><circle cx="150.5" cy="60.4" r="1.6" fill="#fff"/>
+  <ellipse cx="156" cy="84" rx="7" ry="4.5" fill="${C.ck}" opacity=".75"/><path d="M155 94q5 4 10 0" fill="none" stroke="${C.o}" stroke-width="2.5" stroke-linecap="round"/></svg>`;
+const app=`<div class="app"><div class="hd">Chat with Maya</div><div class="msg">Can you send the deck before Friday?</div><div class="in">Message Maya</div></div>`;
+const task=`<div class="task"><i></i><i></i><i class="g"></i></div>`;
+const S=(cap,html)=>`<div class="step"><div class="cap">${cap}</div><div class="scr">${html}</div></div>`;
+const row=(title,why,steps,note)=>`<h2>${title}</h2><p class="why">${why}</p><div class="row">${steps.join('')}</div>${note?`<p class="note">${note}</p>`:''}`;
+
+document.body.innerHTML =
+row('A · Full-screen welcome', 'The desktop dims and a stage takes over. The biggest first impression; the demo is impossible to miss.', [
+  S('1 · Meet Gopu: a scripted demo', `${app}${task}<div class="dim"></div>
+    <div class="box" style="left:70px;top:112px;width:290px">ya i'll send it tmrw<span class="caret"></span></div>
+    ${gopu(46,250,112)}<div class="bub" style="left:286px;top:66px">Polishing…</div>
+    <div style="position:absolute;left:0;right:0;top:160px;text-align:center;color:#fff;font-size:12px">Tap <span class="key on">Right Ctrl</span> to try it</div>
+    <div style="position:absolute;left:0;right:0;top:196px;text-align:center;color:#ddd;font-size:11px">Messy draft → tap → Gopu walks along and tidies it</div>`),
+  S('2 · Your name (and a key, if none)', `${app}${task}<div class="dim"></div>
+    <div class="card" style="left:90px;top:34px;width:228px">${gopu(34,176,0)}<h3>Who are you in chats?</h3><p>So Gopu never mixes up who said what.</p>
+    <div class="lbl">Your name</div><div class="fld">Alex Morgan</div>
+    <div class="lbl">Groq key <span style="font-weight:400;color:#888">(free, or pick another later)</span></div><div class="fld ph">Paste your key</div>
+    <span class="btn">Next</span></div>`),
+  S('3 · Try it for real', `${app}${task}
+    <div class="pill">Open any chat and tap <span class="key">Right Ctrl</span> in the reply box · <span style="color:#888">Skip</span></div>
+    ${gopu(40,232,213)}<div class="bub" style="left:262px;top:156px">I'll come with you!</div>`),
+], 'Risk: a full-screen takeover is heavy for a tray app, and it lands on one monitor only.') +
+
+row('B · A normal window', 'One Windows 11 window, the same look as Settings (brand decision 16). Calm and familiar; the demo plays inside it.', [
+  S('1 · Meet Gopu', `${app}${task}<div class="win"><div class="bar">Welcome to Gopu<span class="x">–▢✕</span></div><div class="in2">
+    <h3>Gopu lives in your text boxes</h3><p>Tap one key and Gopu writes, polishes or does what you asked.</p>
+    <div class="box" style="position:relative;width:280px;margin-top:34px">ya i'll send it tmrw<span class="caret"></span></div>
+    ${gopu(38,210,100)}<div class="bub" style="left:244px;top:62px">Polishing…</div>
+    <div class="foot"><div class="dots"><i class="on"></i><i></i><i></i></div><span class="btn s">Skip</span><span class="btn">Next</span></div></div></div>`),
+  S('2 · Your name (and a key, if none)', `${app}${task}<div class="win" style="inset:8px 34px 26px"><div class="bar">Welcome to Gopu<span class="x">–▢✕</span></div><div class="in2">
+    <h3>A little about you</h3><p>Your name as it shows in chats.</p>
+    <div class="lbl">Your name</div><div class="fld">Alex Morgan</div>
+    <div class="lbl">Groq key</div><div class="fld ph">Paste your key · or choose another provider</div>
+    <div class="foot"><div class="dots"><i></i><i class="on"></i><i></i></div><span class="btn s">Back</span><span class="btn">Next</span></div></div></div>`),
+  S('3 · Try it for real', `${app}${task}<div class="win" style="inset:60px 16px 30px 160px"><div class="bar">Welcome to Gopu<span class="x">–▢✕</span></div><div class="in2" style="padding:10px 14px">
+    <h3 style="font-size:13px">Your turn</h3>
+    <div class="chk"><span class="ok"></span>Open a chat</div><div class="chk"><span></span><div>Tap <span class="key">Right Ctrl</span> in the reply box</div></div>
+    <div class="foot" style="bottom:8px"><div class="dots"><i></i><i></i><i class="on"></i></div><span class="btn s">Done</span></div></div></div>`),
+], 'Ticks itself off when the first real tap lands. Least surprising, least charming.') +
+
+row('C · Gopu on your desktop', 'No window at all. Gopu walks out onto the taskbar by the tray and talks in his speech bubble, the same bubble every tap uses. The most "Gopu".', [
+  S('1 · Meet Gopu', `${app}${task}
+    <div class="box" style="left:250px;top:150px;width:170px;box-shadow:0 4px 14px #0003">ya i'll send it tmrw<span class="caret"></span></div>
+    ${gopu(38,346,150)}<div class="bub" style="left:262px;top:62px">Hi, I'm Gopu! Tap <span class="key on">Right Ctrl</span><br>and watch me tidy this.</div>
+    ${gopu(30,372,238)}`),
+  S('2 · Your name (and a key, if none)', `${app}${task}
+    <div class="bub" style="left:218px;top:108px;width:190px;padding:9px 11px">What's your name in chats?<div class="fld" style="margin:6px 0 4px">Alex Morgan</div>
+    <div style="font-size:10px;color:#8a6c55">Groq key: <u>paste</u> · or set up later in Settings</div></div>
+    ${gopu(38,366,238)}`),
+  S('3 · Try it for real', `${app}${task}
+    <div class="bub" style="left:206px;top:150px;width:200px">Open any chat and tap <span class="key">Right Ctrl</span><br>in the reply box. I'll come along!</div>
+    ${gopu(38,366,238)}`),
+], 'On the first real tap Gopu hops and says you did it. Feels like the product; no new window style to build. Risk: a bubble is small for typing a name, and a provider key is long.');
+
+document.body.insertAdjacentHTML('afterbegin', row('C · the chosen flow, five steps', 'Option C plus an about-you step and a model step (the user, 2026-11-20). Everything happens in Gopu\'s bubble on the taskbar; the bubble grows into a small card when there is something to fill in.', [
+  S('1 · Meet Gopu (scripted demo, no model needed)', `${app}${task}
+    <div class="box" style="left:250px;top:150px;width:170px;box-shadow:0 4px 14px #0003">ya i'll send it tmrw<span class="caret"></span></div>
+    ${gopu(38,346,150)}<div class="bub" style="left:262px;top:62px">Hi, I'm Gopu! Tap <span class="key on">Right Ctrl</span><br>and watch me tidy this.</div>
+    ${gopu(30,372,238)}`),
+  S('2 · Your name', `${app}${task}
+    <div class="bub" style="left:206px;top:116px;width:200px;padding:9px 11px">What's your name in chats?<div class="fld" style="margin:6px 0 6px">Alex Morgan</div>
+    <div style="text-align:right"><span class="btn" style="padding:3px 12px;font-size:11px">Next</span></div></div>
+    ${gopu(38,366,238)}`),
+  S('3 · About you (optional)', `${app}${task}
+    <div class="bub" style="left:176px;top:84px;width:230px;padding:9px 11px">Tell me a little about you: your work,<br>who you usually write to.
+    <div class="ta">I'm a developer at a small agency…</div>
+    <div style="text-align:right"><span class="btn s" style="padding:3px 10px;font-size:11px">Skip</span> <span class="btn" style="padding:3px 12px;font-size:11px">Next</span></div></div>
+    ${gopu(38,366,238)}`),
+  S('4 · Connect a model (required)', `${app}${task}
+    <div class="bub" style="left:140px;top:28px;width:266px;padding:9px 11px">Last thing: I need a model to write with.<br><span style="color:#8a6c55;font-size:10px">I can't write anything until one is connected.</span>
+    <div style="margin:6px 0 2px"><span class="chip on">Groq · free</span><span class="chip">OpenAI</span><span class="chip">Anthropic</span><span class="chip">OpenRouter</span><span class="chip">Ollama · local</span><span class="chip">More…</span></div>
+    <div class="fld ph" style="margin:2px 0 4px">Paste your Groq key</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:10px"><u style="color:#B2600B">Get a free key</u><span style="margin-left:auto;color:#107c10">✓ Connected</span><span class="btn" style="padding:3px 10px;font-size:11px">Connect</span></div></div>
+    ${gopu(38,366,238)}`),
+  S('5 · Try it for real', `${app}${task}
+    <div class="bub" style="left:206px;top:150px;width:200px">Open any chat and tap <span class="key">Right Ctrl</span><br>in the reply box. I'll come along!</div>
+    ${gopu(38,366,238)}`),
+], 'Connect tests the key with one tiny call before moving on. Ollama shows a server check instead of a key; "More…" opens Settings → Model. If a working key already exists, step 4 is skipped. On the first real tap Gopu hops: "You did it!"'));
+</script>
+</body></html>

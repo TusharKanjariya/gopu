@@ -1,0 +1,169 @@
+<!doctype html>
+<!-- Ask Gopu: three looks for the box, each shown closed (just the bar) and with an answer (a saved ask: the daily
+     report), and the same chat after two follow-ups. Static mockup for picking a look; names and data are made up. Render: headless Chrome, 1600 wide. -->
+<html><head><meta charset="utf-8"><title>Ask Gopu: three looks</title>
+<style>
+  :root{--acc:#B2600B;--ring:#E8891C;--text:#1b1b1b;--sub:#616161;--line:#e5e5e5}
+  body{margin:0;background:#ececec;font:14px 'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif;color:var(--text)}
+  h1{font:600 24px 'Segoe UI Variable Display','Segoe UI';margin:24px 32px 4px}
+  .lede{margin:0 32px 18px;color:var(--sub)}
+  .row{display:flex;gap:24px;margin:0 32px 30px;align-items:flex-start}
+  .label{width:190px;flex:none}
+  .label b{font:600 18px 'Segoe UI Variable Display','Segoe UI';display:block;margin-bottom:6px}
+  .label p{margin:0;color:var(--sub);font-size:13px;line-height:1.45}
+  .desk{position:relative;flex:1;height:520px;border-radius:10px;overflow:hidden;
+    background:linear-gradient(160deg,#7aa7d6 0%,#a9c7e6 45%,#d9c39a 46%,#c9a46d 100%)}
+  .desk .win{position:absolute;left:24px;top:22px;width:300px;height:250px;background:#fff;border-radius:8px;opacity:.55}
+  .desk .cap{position:absolute;left:10px;bottom:8px;font-size:11px;color:#fff;text-shadow:0 1px 2px #0006}
+  .glyph{width:22px;height:22px;flex:none}
+  .ico{width:28px;height:28px;border-radius:6px;display:grid;place-items:center;color:var(--sub);font-size:15px}
+  .ico.on{color:var(--acc);background:#fbe9d6}
+  .send{width:30px;height:30px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-size:15px;flex:none}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{font-size:12px;padding:5px 10px;border-radius:14px;background:#fff;border:1px solid #d6d6d6;white-space:nowrap}
+  .chip.saved{border-color:var(--ring);color:var(--acc);font-weight:600}
+  .q{align-self:flex-end;background:#fbe9d6;border-radius:10px 10px 2px 10px;padding:7px 10px;font-size:13px;max-width:80%}
+  .ans{font-size:13px;line-height:1.5}
+  .ans h4{margin:0 0 4px;font-size:14px}
+  .ans ul{margin:0;padding-left:16px}
+  .ans li{margin:2px 0}
+  .src{display:inline-block;font-size:10px;line-height:14px;padding:0 5px;margin-left:3px;border-radius:7px;background:#eee;color:var(--sub);vertical-align:1px}
+  .foot{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--sub)}
+  .foot .btn{border:1px solid #d1d1d1;border-radius:4px;padding:3px 10px;background:#fff;color:var(--text)}
+  .ph{color:#8a8a8a;flex:1}
+
+  /* A: Windows flyout */
+  .a{position:absolute;right:24px;bottom:22px;width:440px;background:#f9f9f9;border:1px solid #dcdcdc;border-radius:8px;box-shadow:0 8px 24px #0003}
+  .a .bar{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px}
+  .a .body{padding:12px 14px 4px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line)}
+  .a .chips{padding:8px 12px 0}
+
+  /* B: Gopu sits on the bar, the answer is his speech bubble */
+  .b{position:absolute;right:24px;bottom:22px;width:440px}
+  .b .bar{position:relative;display:flex;align-items:center;gap:8px;padding:7px 7px 7px 14px;background:#fff;border:2px solid var(--ring);border-radius:22px;box-shadow:0 6px 18px #0003}
+  .b .perch{position:absolute;left:18px;top:-38px;width:44px;height:44px}
+  .b .bubble{position:relative;margin:0 0 50px 0;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 6px 18px #0003;display:flex;flex-direction:column;gap:10px}
+  .b .bubble:after{content:'';position:absolute;left:44px;bottom:-9px;border:10px solid transparent;border-top-color:#fff;border-bottom:0}
+  .b .chips{margin:0 0 46px 70px}
+
+  /* C: panel docked to the screen edge */
+  .c{position:absolute;right:0;top:0;bottom:0;width:380px;background:#f9f9f9;border-left:1px solid #dcdcdc;box-shadow:-6px 0 20px #0002;display:flex;flex-direction:column}
+  .c .head{display:flex;align-items:center;gap:8px;padding:10px 10px 10px 14px;border-bottom:1px solid var(--line);font-weight:600}
+  .c .body{flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+  .c .bar{display:flex;align-items:center;gap:8px;margin:0 10px 10px;padding:6px 6px 6px 12px;background:#fff;border:1px solid #d1d1d1;border-radius:8px}
+  .c .bar.focus{border-color:var(--ring);box-shadow:0 0 0 1px var(--ring)}
+  .c .chips{padding:0 10px 8px}
+  /* follow-ups: earlier turns scroll away under a fade; "added by you" lines have no capture */
+  .scroll{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:10px}
+  .scroll:before{content:'';position:absolute;left:0;right:0;top:0;height:46px;background:linear-gradient(var(--fade,#f9f9f9),transparent);z-index:1}
+  .a .scroll{max-height:330px}
+  .old{opacity:.9}
+  .you{display:inline-block;font-size:10px;line-height:14px;padding:0 5px;margin-left:3px;border-radius:7px;background:#fbe9d6;color:var(--acc);vertical-align:1px}
+  .more{align-self:center;font-size:11px;color:var(--sub);background:#f1f1f1;border-radius:10px;padding:2px 10px}
+  .c .scroll{flex:1}
+  .c.tab{width:34px;top:170px;bottom:auto;height:96px;border-radius:8px 0 0 8px;align-items:center;justify-content:center}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <symbol id="g" viewBox="0 0 64 64">
+    <path d="M20 18C10 12 1 18 2 30c1 10 9 14 18 10Z" fill="#E8891C" stroke="#2B170A" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M44 18c10-6 19 0 18 12-1 10-9 14-18 10Z" fill="#E8891C" stroke="#2B170A" stroke-width="3.5" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="17" fill="#E8891C" stroke="#2B170A" stroke-width="3.5"/>
+    <circle cx="25" cy="26" r="2.6" fill="#2B170A"/><circle cx="39" cy="26" r="2.6" fill="#2B170A"/>
+    <path d="M32 32C32 42 31 50 37 53c4 2 8-1 7-5" fill="none" stroke="#2B170A" stroke-width="10" stroke-linecap="round"/>
+    <path d="M32 32C32 42 31 50 37 53c4 2 8-1 7-5" fill="none" stroke="#E8891C" stroke-width="4" stroke-linecap="round"/>
+    <ellipse cx="32" cy="31" rx="2" ry="4" fill="#E8891C"/>
+  </symbol>
+</defs></svg>
+
+<h1>Ask Gopu: three looks</h1>
+<p class="lede">Left: just the bar, waiting. Middle: after tapping the saved ask "Daily report". Right: the same chat after two follow-ups. The small grey numbers open the captures a line came from; "you" marks a line you added that memory couldn't see.</p>
+
+<template id="report">
+  <div class="q">Daily report</div>
+  <div class="ans"><h4>Alex Morgan Work Report - 26/11/2026</h4><ul>
+    <li>Acme ERP - Fixed PO lines splitting when detached from an invoice; checked it against the stock ledger.<span class="src">4</span></li>
+    <li>Acme ERP - Client call: reviewed returns, rework and rejection.<span class="src">2</span></li>
+    <li>Website - Published new article images with alt text.<span class="src">3</span></li>
+  </ul></div>
+  <div class="foot"><span class="btn">Copy</span><span class="btn">Edit format</span><span style="flex:1"></span>From 9 windows, 09:12–18:40</div>
+</template>
+<template id="thread">
+  <div class="q old">Daily report</div>
+  <div class="ans old"><h4>Alex Morgan Work Report - 26/11/2026</h4><ul>
+    <li>Acme ERP - Fixed PO lines splitting when detached from an invoice.<span class="src">4</span></li>
+    <li>Acme ERP - Client call: reviewed returns, rework and rejection.<span class="src">2</span></li>
+    <li>Website - Published new article images with alt text.<span class="src">3</span></li></ul></div>
+  <div class="q old">Only Acme ERP</div>
+  <div class="ans old"><h4>Alex Morgan Work Report - 26/11/2026</h4><ul>
+    <li>Acme ERP - Fixed PO lines splitting when detached from an invoice.<span class="src">4</span></li>
+    <li>Acme ERP - Client call: reviewed returns, rework and rejection.<span class="src">2</span></li></ul></div>
+  <div class="q">Also add: call with Rahul about the stock ledger, 4 pm</div>
+  <div class="ans"><h4>Alex Morgan Work Report - 26/11/2026</h4><ul>
+    <li>Acme ERP - Fixed PO lines splitting when detached from an invoice.<span class="src">4</span></li>
+    <li>Acme ERP - Client call: reviewed returns, rework and rejection.<span class="src">2</span></li>
+    <li>Acme ERP - Call with Rahul about the stock ledger (4 pm).<span class="you">you</span></li></ul></div>
+  <div class="foot"><span class="btn">Copy</span><span class="btn">Save as ask</span><span style="flex:1"></span>Only Acme ERP, 3 items</div>
+</template>
+<template id="latest">
+  <span class="more">↑ 2 earlier messages</span>
+  <div class="q">Also add: call with Rahul about the stock ledger, 4 pm</div>
+  <div class="ans"><h4>Alex Morgan Work Report - 26/11/2026</h4><ul>
+    <li>Acme ERP - Fixed PO lines splitting when detached from an invoice.<span class="src">4</span></li>
+    <li>Acme ERP - Client call: reviewed returns, rework and rejection.<span class="src">2</span></li>
+    <li>Acme ERP - Call with Rahul about the stock ledger (4 pm).<span class="you">you</span></li></ul></div>
+  <div class="foot"><span class="btn">Copy</span><span class="btn">Save as ask</span><span style="flex:1"></span>Only Acme ERP, 3 items</div>
+</template>
+<template id="chips">
+  <span class="chip">What did I do today?</span><span class="chip">What's unfinished?</span><span class="chip saved">★ Daily report</span>
+</template>
+
+<!-- A -->
+<div class="row"><div class="label"><b>A · Flyout</b><p>A Windows-style card, like the volume or Wi-Fi flyout. The answer grows upward from the bar. Quiet, and fits the settings window.</p></div>
+  <div class="desk"><div class="win"></div>
+    <div class="a"><div class="chips" data-t="chips"></div>
+      <div class="bar"><svg class="glyph"><use href="#g"/></svg><span class="ph">Ask about anything you've seen…</span><span class="ico on" title="Pinned">📌</span><span class="send">↑</span></div></div>
+    <span class="cap">closed</span></div>
+  <div class="desk"><div class="win"></div>
+    <div class="a"><div class="body" data-t="report"></div><div class="chips" data-t="chips"></div>
+      <div class="bar"><svg class="glyph"><use href="#g"/></svg><span class="ph">Ask a follow-up…</span><span class="ico" title="New chat">＋</span><span class="ico on" title="Pinned">📌</span><span class="send">↑</span></div></div>
+    <span class="cap">with an answer</span></div>
+  <div class="desk"><div class="win"></div>
+    <div class="a"><div class="body scroll" data-t="thread"></div><div class="chips" data-t="chips"></div>
+      <div class="bar"><svg class="glyph"><use href="#g"/></svg><span class="ph">Ask a follow-up…</span><span class="ico" title="New chat">＋</span><span class="ico on" title="Pinned">📌</span><span class="send">↑</span></div></div>
+    <span class="cap">after two follow-ups: grows to about half the screen, then earlier turns scroll up</span></div></div>
+
+<!-- B -->
+<div class="row"><div class="label"><b>B · Gopu on the bar</b><p>The mascot sits on the bar like he stands on text boxes, and answers in his speech bubble. Most "Gopu"; a bit playful for long reports.</p></div>
+  <div class="desk"><div class="win"></div>
+    <div class="b"><div class="chips" data-t="chips"></div>
+      <div class="bar"><svg class="perch"><use href="#g"/></svg><span class="ph" style="padding-left:52px">Ask me about anything you've seen…</span><span class="ico on">📌</span><span class="send">↑</span></div></div>
+    <span class="cap">closed</span></div>
+  <div class="desk"><div class="win"></div>
+    <div class="b"><div class="bubble" data-t="report"></div>
+      <div class="bar"><svg class="perch"><use href="#g"/></svg><span class="ph" style="padding-left:52px">Ask a follow-up…</span><span class="ico">＋</span><span class="ico on">📌</span><span class="send">↑</span></div></div>
+    <span class="cap">with an answer</span></div>
+  <div class="desk"><div class="win"></div>
+    <div class="b"><div class="bubble" data-t="latest"></div>
+      <div class="bar"><svg class="perch"><use href="#g"/></svg><span class="ph" style="padding-left:52px">Ask a follow-up…</span><span class="ico">＋</span><span class="ico on">📌</span><span class="send">↑</span></div></div>
+    <span class="cap">after two follow-ups: the bubble holds the latest answer; earlier ones fold away</span></div></div>
+
+<!-- C -->
+<div class="row"><div class="label"><b>C · Side panel</b><p>Docks to the screen edge, full height, with room for long reports and past chats. When closed, a small tab stays on the edge.</p></div>
+  <div class="desk"><div class="win"></div>
+    <div class="c tab"><svg class="glyph"><use href="#g"/></svg></div>
+    <span class="cap">closed: a tab on the edge</span></div>
+  <div class="desk"><div class="win"></div>
+    <div class="c"><div class="head"><svg class="glyph"><use href="#g"/></svg>Ask Gopu<span style="flex:1"></span><span class="ico">☰</span><span class="ico">＋</span><span class="ico on">📌</span><span class="ico">✕</span></div>
+      <div class="body" data-t="report"></div><div class="chips" data-t="chips"></div>
+      <div class="bar focus"><span class="ph">Ask a follow-up…</span><span class="send">↑</span></div></div>
+    <span class="cap">open</span></div>
+  <div class="desk"><div class="win"></div>
+    <div class="c"><div class="head"><svg class="glyph"><use href="#g"/></svg>Ask Gopu<span style="flex:1"></span><span class="ico">☰</span><span class="ico">＋</span><span class="ico on">📌</span><span class="ico">✕</span></div>
+      <div class="body scroll" data-t="thread"></div><div class="chips" data-t="chips"></div>
+      <div class="bar focus"><span class="ph">Ask a follow-up…</span><span class="send">↑</span></div></div>
+    <span class="cap">after two follow-ups: the whole chat scrolls in the panel</span></div></div>
+
+<script>
+for (const el of document.querySelectorAll('[data-t]')) el.innerHTML = document.getElementById(el.dataset.t).innerHTML;
+</script>
+</body></html>
