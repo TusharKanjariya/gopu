@@ -43,6 +43,13 @@
   .snz{flex-basis:100%;display:flex;gap:6px;flex-wrap:wrap}
   .snz[hidden]{display:none}
   #note .snz button{font-size:11px;padding:3px 9px}
+  /* "remind me …": what was read, with Add / Change; nothing is saved until Add */
+  .remcard{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--edge);border-radius:8px;padding:8px 10px;background:var(--field)}
+  .remcard svg{width:22px;height:22px;flex:none}
+  .remcard b{display:block}
+  .remcard span{color:var(--sub);font-size:12px}
+  .remcard .foot{margin-top:6px}
+  .remcard .foot button.p{background:var(--acc);border-color:var(--acc);color:var(--acc-fg)}
   .eod{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
   #note button{font:inherit;font-size:12px;padding:4px 10px;border-radius:14px;background:var(--field);border:1px solid var(--edge);color:var(--text);cursor:pointer}
   #note button.saved{border-color:var(--ring);color:var(--acc);font-weight:600}
@@ -199,6 +206,7 @@ async function send(question, label) {
   $('thread').insertAdjacentHTML('beforeend', bubble(question, label) + `<div class="a"><span class="dots"><i></i><i></i><i></i></span></div>`);
   const out = $('thread').lastElementChild;
   toEnd();
+  if (/^\s*(remind me|set a reminder|add a reminder)/i.test(question)) return remindCard(out, question);
   try {
     const a = await invoke('ask_question', { question, history: chat, keep, chat: chatId, label: label || null });
     chat.push([question, a.text]);
@@ -209,6 +217,25 @@ async function send(question, label) {
   }
   toEnd();
   busy = false; $('q').placeholder = 'Ask a follow-up…'; $('q').focus();
+}
+
+// "remind me …": one model call reads it; the card shows what it read. Add saves it, Change opens the page form filled
+// in. It stays out of the chat sent with follow-ups.
+async function remindCard(out, question) {
+  let d;
+  try { d = await invoke('ask_remind', { question }); } catch (e) { out.innerHTML = `<div class="err">${esc(String(e))}</div>`; return done(); }
+  const at = Math.floor(new Date(`${d.date}T${d.time}`).getTime() / 1000);
+  out.innerHTML = `<div class="remcard">${HEAD}<div><b>${esc(d.title)}</b><span>${esc(clock(at))}${d.early ? ` · shows ${d.early} min early` : ''}</span>
+    <div class="foot"><button class="p" data-r="add">Add</button><button data-r="change">Change</button><span class="r-msg"></span></div></div></div>`;
+  out.querySelector('[data-r=add]').onclick = async () => {
+    try {
+      await invoke('reminder_save', { id: null, title: d.title, at, early: d.early });
+      out.querySelector('.foot').innerHTML = `<span>Added. I'll remind you ${esc(clock(at - d.early * 60))}.</span>`;
+    } catch (e) { out.querySelector('.r-msg').textContent = String(e); }
+  };
+  out.querySelector('[data-r=change]').onclick = () => invoke('ask_open_settings', { route: 'reminders:' + encodeURIComponent(JSON.stringify(d)) });
+  done();
+  function done() { toEnd(); busy = false; $('q').focus(); }
 }
 
 // "Save as ask": a name and the request, filled in from this chat (its questions, follow-ups included) and editable

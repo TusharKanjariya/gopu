@@ -509,6 +509,31 @@ pub async fn ask_question(
     .map_err(|e| e.to_string())?
 }
 
+/// "remind me …" in the box: the reminder read from it, not saved (the box shows Add / Change).
+#[tauri::command]
+pub async fn ask_remind(app: AppHandle, question: String) -> Result<gopu_core::ask::ReminderDraft, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let me = Settings::load().resolve(gopu_core::setting);
+        let llm = Llm::new(&me);
+        if gopu_core::settings::provider(&me.provider).is_some_and(|p| p.needs_key) && !llm.has_key() {
+            crate::open_settings(&app, Some("model"));
+            return Err("I need a model key to read that. I've opened Settings: paste one there.".into());
+        }
+        gopu_core::ask::reminder(&llm, &question, gopu_core::memory::now()).map_err(|e| {
+            println!("remind: {e}");
+            gopu_core::llm::problem(&e).map_or(e.clone(), |(say, _)| say.to_string())
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Change on the box's reminder card: the Reminders page with its form filled in. `route`: `reminders:<JSON, URI-encoded>`.
+#[tauri::command]
+pub async fn ask_open_settings(app: AppHandle, route: String) {
+    crate::open_settings(&app, Some(&route));
+}
+
 /// With the debug switch on (About, or `GOPU_DEBUG`), the last asks go to `last-asks.txt` in the log folder: what was
 /// sent and what came back, for checking answers. It holds screen text, so it's off by default and trimmed.
 fn log(s: &Settings, question: &str, a: &gopu_core::ask::Answer) {

@@ -640,6 +640,16 @@ $('oAdd').onclick = async () => {
   } catch (e) { err(e); }
 };
 $('oCancel').onclick = () => oForm();
+// Change on the Ask box's card: the form filled with what it read, to fix before adding
+function oFill(d) { oForm(); $('oTitle').value = d.title; $('oDate').value = d.date; $('oTime').value = d.time; $('oEarly').value = String(d.early); $('oTitle').focus(); }
+
+// `page` or `page:arg` (from the URL or open_settings): search:<capture id>, reminders:<URI-encoded form fill>
+function route(h) {
+  const i = h.indexOf(':'), page = i < 0 ? h : h.slice(0, i), arg = i < 0 ? '' : h.slice(i + 1);
+  showPage(page);
+  if (!arg) return;
+  if (page === 'reminders') { try { oFill(JSON.parse(decodeURIComponent(arg))); } catch (e) {} } else openCapture(+arg);
+}
 $('oTitle').addEventListener('keydown', e => { if (e.key === 'Enter') $('oAdd').click(); });
 
 // the end-of-day reminder: a time and one of the saved asks; off unless ticked
@@ -775,9 +785,7 @@ async function loadPeople() {
   document.querySelector(`input[name=anchor][value=${data.saved.ask_anchor === 'taskbar' ? 'taskbar' : 'edge'}]`).checked = true;
   showProvider(saved);
   // #search:123 opens a capture (a source cited in the Ask Gopu box)
-  const [page, cap] = location.hash.slice(1).split(':');
-  showPage(page);
-  if (cap) openCapture(+cap);
+  route(location.hash.slice(1));
 })();
 </script>
 </body></html>

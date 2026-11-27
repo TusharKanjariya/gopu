@@ -423,3 +423,82 @@ mod tests {
         assert!(cut.starts_with('…') && cut.contains("steel rods") && cut.chars().count() == 91, "{cut}");
     }
 }
+
+// ---------------------------------------------------------------- "remind me …" (reminders slice 04)
+
+/// A reminder read from the Ask box, not saved yet: the box shows it with Add / Change. Local date and time, so the
+/// page form takes them as they are.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct ReminderDraft {
+    pub title: String,
+    /// YYYY-MM-DD
+    pub date: String,
+    /// HH:MM, 24-hour
+    pub time: String,
+    /// Minutes early to show it.
+    pub early: u32,
+}
+
+/// The question asks for a reminder rather than about memory.
+pub fn wants_reminder(question: &str) -> bool {
+    let q = question.trim_start().to_lowercase();
+    q.starts_with("remind me") || q.starts_with("set a reminder") || q.starts_with("add a reminder")
+}
+
+const REMIND_SYSTEM: &str = "You read one reminder request and reply with JSON only, no other text:
+{\"title\": \"...\", \"date\": \"YYYY-MM-DD\", \"time\": \"HH:MM\", \"early\": 10}
+- title: what it's for, short, starting with a capital letter, without \"remind me\" or the time. People's names start with a capital letter.
+- date and time: local, 24-hour. A time with no day is the next time it comes: today if it's still ahead, else tomorrow. \
+A bare hour from 1 to 7 with no AM or PM means the afternoon. \"in 20 minutes\" counts from now. A day with no time: 09:00. \
+Take a weekday's date from the list of the coming days.
+- early: the minutes the user asked to be told before it (\"10 min early\", \"half an hour before\"); 10 if they didn't say, 0 for \"in 20 minutes\".
+If the request names no day and no time at all (\"remind me to stretch\"), reply {\"error\": \"no time\"}; never make one up.";
+
+const WEEKDAYS: [&str; 7] = ["Thursday", "Friday", "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"]; // 1970-01-01 was a Thursday
+
+/// One model call reads title, time and lead time from "remind me …". The error is a sentence for the box.
+pub fn reminder(llm: &Llm, question: &str, now: i64) -> Result<ReminderDraft, String> {
+    let day = |t: i64| WEEKDAYS[(t + crate::platform::utc_offset_secs()).div_euclid(86_400).rem_euclid(7) as usize];
+    let secs = (now + crate::platform::utc_offset_secs()).rem_euclid(86_400);
+    let now_text = format!("{} {:02}:{:02}", crate::people::local_date(now), secs / 3600, secs % 3600 / 60);
+    // models slip on weekday arithmetic, so the coming week is spelled out
+    let coming: Vec<String> = (1..=7).map(|i| now + i * 86_400).map(|t| format!("{} {}", day(t), crate::people::local_date(t))).collect();
+    let prompt = format!("Now: {} {now_text}.\nComing days: {}.\nRequest: {question}", day(now), coming.join(", "));
+    let d = draft(&llm.chat(REMIND_SYSTEM, &prompt)?)?;
+    // the same shape, so the strings compare like the times
+    if format!("{} {}", d.date, d.time) <= now_text {
+        return Err("When should I remind you? Add a time, like \"at 5 PM\" or \"in 20 minutes\".".into());
+    }
+    Ok(d)
+}
+
+/// The model's JSON, checked: a title, a real-looking date and time.
+fn draft(reply: &str) -> Result<ReminderDraft, String> {
+    const SAY: &str = "I couldn't tell when. Try something like \"remind me to call Anna at 5 PM\".";
+    let json = reply.trim().trim_start_matches("```json").trim_matches('`').trim();
+    let d: ReminderDraft = serde_json::from_str(json).map_err(|_| SAY.to_string())?;
+    let num = |s: &str, at: usize, len: usize| s.get(at..at + len).and_then(|n| n.parse::<u32>().ok());
+    let date_ok = d.date.len() == 10 && num(&d.date, 0, 4).is_some() && num(&d.date, 5, 2).is_some_and(|m| (1..=12).contains(&m)) && num(&d.date, 8, 2).is_some_and(|x| (1..=31).contains(&x));
+    let time_ok = d.time.len() == 5 && num(&d.time, 0, 2).is_some_and(|h| h < 24) && num(&d.time, 3, 2).is_some_and(|m| m < 60);
+    let title = d.title.trim().chars().take(80).collect::<String>();
+    if !date_ok || !time_ok || title.is_empty() {
+        return Err(SAY.into());
+    }
+    Ok(ReminderDraft { title, early: d.early.min(24 * 60), ..d })
+}
+
+#[cfg(test)]
+mod remind_tests {
+    use super::*;
+
+    #[test]
+    fn reads_the_models_json() {
+        assert!(wants_reminder("  Remind me to call Anna at 5"));
+        assert!(!wants_reminder("what did anna remind me about?"));
+        let d = draft("```json\n{\"title\":\"Call with Anna\",\"date\":\"2026-11-27\",\"time\":\"17:00\",\"early\":10}\n```").unwrap();
+        assert_eq!((d.title.as_str(), d.time.as_str(), d.early), ("Call with Anna", "17:00", 10));
+        assert!(draft("{\"error\":\"no time\"}").is_err());
+        assert!(draft("{\"title\":\"X\",\"date\":\"2026-13-01\",\"time\":\"17:00\",\"early\":0}").is_err());
+        assert!(draft("{\"title\":\" \",\"date\":\"2026-11-27\",\"time\":\"17:00\",\"early\":0}").is_err());
+    }
+}

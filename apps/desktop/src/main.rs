@@ -23,7 +23,7 @@ fn main() {
             memory_ui::memory_ignore, memory_ui::memory_set, memory_ui::people_list, memory_ui::people_save,
             memory_ui::people_delete, memory_ui::style_state, memory_ui::style_save, memory_ui::style_delete, memory_ui::mcp_state, memory_ui::mcp_set,
             update::update_state, update::update_check, update::update_install,
-            anchor::anchor_click, anchor::anchor_drag, ask_ui::ask_fit, ask_ui::ask_drag, ask_ui::ask_close, ask_ui::ask_state, ask_ui::ask_pin, ask_ui::ask_open_capture, ask_ui::ask_question, ask_ui::ask_saved_set, ask_ui::ask_saved_delete, ask_ui::ask_chats, ask_ui::ask_chat, ask_ui::ask_note, ask_ui::check_in_save, ask_ui::check_in_delete, ask_ui::reminder_save, ask_ui::reminder_delete, ask_ui::reminder_done, ask_ui::reminder_snooze,
+            anchor::anchor_click, anchor::anchor_drag, ask_ui::ask_fit, ask_ui::ask_drag, ask_ui::ask_close, ask_ui::ask_state, ask_ui::ask_pin, ask_ui::ask_open_capture, ask_ui::ask_question, ask_ui::ask_saved_set, ask_ui::ask_saved_delete, ask_ui::ask_chats, ask_ui::ask_chat, ask_ui::ask_note, ask_ui::check_in_save, ask_ui::check_in_delete, ask_ui::reminder_save, ask_ui::ask_remind, ask_ui::ask_open_settings, ask_ui::reminder_delete, ask_ui::reminder_done, ask_ui::reminder_snooze,
         ])
         .setup(|app| {
             let overlay = app.get_webview_window("overlay").expect("overlay window");
@@ -345,7 +345,7 @@ fn open_settings(app: &AppHandle, page: Option<&str>) {
         let _ = w.unminimize();
         let _ = w.set_focus();
         if let Some(p) = page {
-            let _ = w.eval(&format!("showPage('{p}')"));
+            let _ = w.eval(&format!("route({})", serde_json::Value::from(p)));
         }
         return;
     }
