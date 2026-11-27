@@ -92,7 +92,7 @@
       <circle cx="25" cy="26" r="2.6" fill="#2B170A"/><circle cx="39" cy="26" r="2.6" fill="#2B170A"/>
       <path d="M32 32C32 42 31 50 37 53c4 2 8-1 7-5" fill="none" stroke="#2B170A" stroke-width="10" stroke-linecap="round"/>
       <path d="M32 32C32 42 31 50 37 53c4 2 8-1 7-5" fill="none" stroke="#E8891C" stroke-width="4" stroke-linecap="round"/></g></svg>
-    <input id="q" type="text" placeholder="Ask about anything you've seen…" aria-label="Ask Gopu" autocomplete="off" spellcheck="true">
+    <input id="q" type="text" placeholder="Ask about anything you've seen, or “remind me…”" aria-label="Ask Gopu" autocomplete="off" spellcheck="true">
     <button class="ico" id="past" title="Past chats" aria-label="Past chats">🕘</button>
     <button class="ico" id="new" title="New chat" aria-label="New chat">＋</button>
     <button class="ico" id="pin" aria-pressed="false" title="Pin: keep it on screen">📌</button>
@@ -172,7 +172,7 @@ async function pastChats() {
   if (busy) return;
   // the chat on screen is already kept (it's in the list); asking from here starts a new one
   chat = []; keep = []; chatId = null;
-  $('q').placeholder = "Ask about anything you've seen…";
+  $('q').placeholder = "Ask about anything you've seen, or “remind me…”";
   let list;
   try { list = await invoke('ask_chats'); } catch (e) { list = []; }
   $('thread').innerHTML = `<div class="hist"><div class="hist-head">Past chats<span>kept on this PC for 30 days</span></div>`
@@ -230,7 +230,8 @@ async function remindCard(out, question) {
   out.querySelector('[data-r=add]').onclick = async () => {
     try {
       await invoke('reminder_save', { id: null, title: d.title, at, early: d.early });
-      out.querySelector('.foot').innerHTML = `<span>Added. I'll remind you ${esc(clock(at - d.early * 60))}.</span>`;
+      const s = at - d.early * 60, today = new Date(s * 1000).toDateString() === new Date().toDateString();
+      out.querySelector('.foot').innerHTML = `<span>Added. I'll remind you ${today ? 'at' : 'on'} ${esc(clock(s))}.</span>`;
     } catch (e) { out.querySelector('.r-msg').textContent = String(e); }
   };
   out.querySelector('[data-r=change]').onclick = () => invoke('ask_open_settings', { route: 'reminders:' + encodeURIComponent(JSON.stringify(d)) });
@@ -282,7 +283,7 @@ $('q').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) 
 $('send').onclick = () => send($('q').value);
 $('grip').addEventListener('mousedown', e => { if (e.button === 0) invoke('ask_drag'); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') invoke('ask_close'); });
-$('new').onclick = () => { chat = []; keep = []; chatId = null; $('thread').innerHTML = ''; $('q').placeholder = "Ask about anything you've seen…"; $('q').focus(); };
+$('new').onclick = () => { chat = []; keep = []; chatId = null; $('thread').innerHTML = ''; $('q').placeholder = "Ask about anything you've seen, or “remind me…”"; $('q').focus(); };
 $('pin').onclick = async () => {
   const on = $('pin').getAttribute('aria-pressed') !== 'true';
   await invoke('ask_pin', { on });
