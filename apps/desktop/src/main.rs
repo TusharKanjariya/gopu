@@ -210,7 +210,7 @@ fn tap(overlay: &WebviewWindow, field: &Field) {
             println!("  wrote it into the field");
             // a plan with a time in what the user just wrote: the tab offers "Remind you?" (reminders slice 06)
             let s = Settings::load();
-            if let Some(d) = gopu_core::ask::spot(&o.text, gopu_core::memory::now()).filter(|d| !s.offers_off && !s.reminders.iter().any(|r| r.title == d.title)) {
+            if let Some(d) = o.plan.clone().filter(|d| !s.offers_off && !s.reminders.iter().any(|r| r.title == d.title)) {
                 ask_ui::offer(overlay.app_handle(), d);
             }
             if memory_ok {

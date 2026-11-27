@@ -1,5 +1,5 @@
 //! Live check of every field case against the configured LLM, with made-up screen content:
-//! `cargo run -p gopu-core --example field_cases`
+//! `cargo run -p gopu-core --example field_cases [-- mixed|dm|plans [two]]`
 use gopu_core::{assist, llm::Llm, Field, OnScreenContext};
 
 fn main() {
@@ -25,6 +25,25 @@ fn main() {
         ("selection", field("Sure, I will definately look at it and send you my thoughts.", "definately look at it")),
         ("selected instruction", field("Thanks Maya!\nwrite one line saying the deck looks great", "write one line saying the deck looks great")),
     ];
+
+    // `-- plans`: replies that set a plan carry it back for the "Remind you?" offer; text never has the plan line
+    if std::env::args().nth(1).as_deref() == Some("plans") {
+        let dm = OnScreenContext {
+            app: "Discord.exe".into(),
+            window_title: "@Bhavadip Nimavat - Discord".into(),
+            before: "Bhavadip Nimavat 5:17 PM\nkal working j che ho bhai sir a kahyu".into(),
+            after: "Message @Bhavadip Nimavat".into(),
+            ..ctx.clone()
+        };
+        for (c, text) in [(&dm, "Ok, kal savare 10:30 e Indigo ni meeting hase"), (&dm, "ok kal 6 vage call kariye"), (&dm, "thanks bhai"), (&ctx, "reply saying ill send notes by thursday evening"), (&ctx, "")].into_iter().take(if std::env::args().any(|a| a == "two") { 2 } else { 5 }) {
+            std::thread::sleep(std::time::Duration::from_secs(12)); // the free tier's per-minute limit
+            match assist::run(&llm, &field(text, ""), c, &me, None) {
+                Ok(o) => println!("[{text}] -> {:?}\n  {}\n  plan: {:?}\n", o.case, o.text.replace('\n', "\n  "), o.plan),
+                Err(e) => println!("[{text}] ERROR: {e}\n"),
+            }
+        }
+        return;
+    }
 
     // the user's run (2026-11-26): their own words plus a request about how to write them, typed or selected.
     // `-- mixed`: just these
