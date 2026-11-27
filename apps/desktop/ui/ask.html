@@ -206,9 +206,11 @@ async function send(question, label) {
   $('thread').insertAdjacentHTML('beforeend', bubble(question, label) + `<div class="a"><span class="dots"><i></i><i></i><i></i></span></div>`);
   const out = $('thread').lastElementChild;
   toEnd();
+  // English "remind me…" skips the memory search; any other language is noticed by the ask itself (a.remind)
   if (/^\s*(remind me|set a reminder|add a reminder)/i.test(question)) return remindCard(out, question);
   try {
     const a = await invoke('ask_question', { question, history: chat, keep, chat: chatId, label: label || null });
+    if (a.remind) return remindCard(out, question, a.remind);
     chat.push([question, a.text]);
     if (a.chat) chatId = a.chat;
     answer(out, a.text, a.sources, label);
@@ -221,9 +223,8 @@ async function send(question, label) {
 
 // "remind me …": one model call reads it; the card shows what it read. Add saves it, Change opens the page form filled
 // in. It stays out of the chat sent with follow-ups.
-async function remindCard(out, question) {
-  let d;
-  try { d = await invoke('ask_remind', { question }); } catch (e) { out.innerHTML = `<div class="err">${esc(String(e))}</div>`; return done(); }
+async function remindCard(out, question, d) {
+  if (!d) try { d = await invoke('ask_remind', { question }); } catch (e) { out.innerHTML = `<div class="err">${esc(String(e))}</div>`; return done(); }
   const at = Math.floor(new Date(`${d.date}T${d.time}`).getTime() / 1000);
   out.innerHTML = `<div class="remcard">${HEAD}<div><b>${esc(d.title)}</b><span>${esc(clock(at))}${d.early ? ` · shows ${d.early} min early` : ''}</span>
     <div class="foot"><button class="p" data-r="add">Add</button><button data-r="change">Change</button><span class="r-msg"></span></div></div></div>`;

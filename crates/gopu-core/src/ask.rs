@@ -41,6 +41,8 @@ pub struct Answer {
     pub sources: Vec<Source>,
     /// What went to the model (for the debug log).
     pub sent: String,
+    /// The message asked for a reminder (in any language): what the model read, or why it couldn't. No answer then.
+    pub reminder: Option<Result<ReminderDraft, String>>,
 }
 
 /// The period a question is about, from its words: (since, until, how to say it). None: not about a time.
@@ -249,7 +251,7 @@ const HISTORY_ANSWER_CHARS: usize = 2_000;
 pub fn ask(llm: &Llm, store: &Store, question: &str, history: &[(String, String)], keep: &[i64], me: &Resolved, now: i64) -> Result<Answer, String> {
     let (block, sources) = sources(store, question, keep, now);
     if sources.is_empty() && history.is_empty() {
-        return Ok(Answer { text: "I don't remember anything about that yet.".into(), sources, sent: String::new() });
+        return Ok(Answer { text: "I don't remember anything about that yet.".into(), sources, sent: String::new(), reminder: None });
     }
     let people: String = crate::people::list(store)
         .unwrap_or_default()
@@ -263,12 +265,22 @@ pub fn ask(llm: &Llm, store: &Store, question: &str, history: &[(String, String)
         .map(|(q, a)| format!("User: {q}\nGopu: {}\n", a.chars().take(HISTORY_ANSWER_CHARS).collect::<String>()))
         .collect();
     let chat = if chat.is_empty() { chat } else { format!("<chat_so_far>\n{chat}</chat_so_far>\n") };
-    let prompt = format!(
-        "{user}Now: {} {}.\n{people}<sources>\n{block}</sources>\n{chat}\nQuestion: {question}",
-        crate::people::local_date(now),
-        clock_text(now)
-    );
-    Ok(Answer { text: plain(&llm.chat(SYSTEM, &prompt)?), sources, sent: prompt })
+    let (now_text, when) = now_and_week(now);
+    let prompt = format!("{user}{when}
+{people}<sources>
+{block}</sources>
+{chat}
+Question: {question}");
+    // the same call notices a reminder request in any language, so no phrase list and no second call
+    let text = plain(&llm.chat(&format!("{SYSTEM}
+
+{REMIND_IN_ASK}
+{REMIND_SYSTEM}"), &prompt)?);
+    if let Some(json) = text.trim_start().strip_prefix("REMINDER") {
+        let reminder = Some(draft(json).and_then(|d| ahead(d, &now_text)));
+        return Ok(Answer { text: String::new(), sources: vec![], sent: prompt, reminder });
+    }
+    Ok(Answer { text, sources, sent: prompt, reminder: None })
 }
 
 /// The answer in characters that paste cleanly anywhere: models (gpt-oss) put narrow no-break spaces before
@@ -452,21 +464,35 @@ const REMIND_SYSTEM: &str = "You read one reminder request and reply with JSON o
 A bare hour from 1 to 7 with no AM or PM means the afternoon. \"in 20 minutes\" counts from now. A day with no time: 09:00. \
 Take a weekday's date from the list of the coming days.
 - early: the minutes the user asked to be told before it (\"10 min early\", \"half an hour before\"); 10 if they didn't say, 0 for \"in 20 minutes\".
+Keep the title in the language the user wrote in.
 If the request names no day and no time at all (\"remind me to stretch\"), reply {\"error\": \"no time\"}; never make one up.";
+
+const REMIND_IN_ASK: &str = "If the question instead asks you to remind the user of something or to set a reminder, \
+in any language, don't answer it from the sources: reply with REMINDER on the first line and then the JSON below.";
 
 const WEEKDAYS: [&str; 7] = ["Thursday", "Friday", "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"]; // 1970-01-01 was a Thursday
 
 /// One model call reads title, time and lead time from "remind me …". The error is a sentence for the box.
 pub fn reminder(llm: &Llm, question: &str, now: i64) -> Result<ReminderDraft, String> {
+    let (now_text, when) = now_and_week(now);
+    ahead(draft(&llm.chat(REMIND_SYSTEM, &format!("{when}\nRequest: {question}"))?)?, &now_text)
+}
+
+/// ("YYYY-MM-DD HH:MM" now, local; the prompt's lines saying now and the coming week). Models slip on weekday
+/// arithmetic, so the coming week is spelled out.
+fn now_and_week(now: i64) -> (String, String) {
     let day = |t: i64| WEEKDAYS[(t + crate::platform::utc_offset_secs()).div_euclid(86_400).rem_euclid(7) as usize];
     let secs = (now + crate::platform::utc_offset_secs()).rem_euclid(86_400);
     let now_text = format!("{} {:02}:{:02}", crate::people::local_date(now), secs / 3600, secs % 3600 / 60);
-    // models slip on weekday arithmetic, so the coming week is spelled out
     let coming: Vec<String> = (1..=7).map(|i| now + i * 86_400).map(|t| format!("{} {}", day(t), crate::people::local_date(t))).collect();
-    let prompt = format!("Now: {} {now_text}.\nComing days: {}.\nRequest: {question}", day(now), coming.join(", "));
-    let d = draft(&llm.chat(REMIND_SYSTEM, &prompt)?)?;
+    let when = format!("Now: {} {now_text} ({}).\nComing days: {}.", day(now), clock_text(now), coming.join(", "));
+    (now_text, when)
+}
+
+/// A reminder must still be ahead (a model that made a time up usually picks "now").
+fn ahead(d: ReminderDraft, now_text: &str) -> Result<ReminderDraft, String> {
     // the same shape, so the strings compare like the times
-    if format!("{} {}", d.date, d.time) <= now_text {
+    if format!("{} {}", d.date, d.time).as_str() <= now_text {
         return Err("When should I remind you? Add a time, like \"at 5 PM\" or \"in 20 minutes\".".into());
     }
     Ok(d)

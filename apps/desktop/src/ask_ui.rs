@@ -494,6 +494,9 @@ pub async fn ask_question(
             println!("ask: {e}");
             gopu_core::llm::problem(&e).map_or("Something went wrong. Try again in a moment.".to_string(), |(say, _)| say.to_string())
         })?;
+        if let Some(r) = a.reminder {
+            return r.map(|d| json!({ "remind": d })); // the box shows Add / Change; not kept as a chat turn
+        }
         log(&saved, &question, &a);
         let sources: Vec<Value> = a
             .sources
