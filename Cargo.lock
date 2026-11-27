@@ -1279,7 +1279,7 @@ dependencies = [
 
 [[package]]
 name = "gopu-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "regex",
  "rusqlite",
@@ -1292,7 +1292,7 @@ dependencies = [
 
 [[package]]
 name = "gopu-desktop"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "gopu-core",
  "serde_json",

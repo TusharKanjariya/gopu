@@ -4,7 +4,7 @@
 <p align="center">
 <a href="https://github.com/TusharKanjariya/gopu/releases/latest"><img alt="Download for Windows" src="https://img.shields.io/badge/download-Windows%2010%20%2F%2011-E8891C"></a>
 <img alt="Apache-2.0" src="https://img.shields.io/badge/licence-Apache--2.0-B2600B">
-<img alt="Preview" src="https://img.shields.io/badge/version-0.1.0%20preview-2B170A">
+<img alt="Preview" src="https://img.shields.io/badge/version-0.2.0%20preview-2B170A">
 </p>
 
 <p align="center"><img src="assets/demo/gopu-key.gif" width="640" alt="An empty 'Who am I?' box: a tap of the Gopu key, Gopu drops onto the box, writes an introduction from the message on screen, and hops: Done!"></p>
@@ -26,6 +26,12 @@ Gopu reads on-screen text through Windows accessibility (never screenshots) into
 key outside a text box and ask: *"what did I do today?"*, *"what's unfinished?"*, or a saved ask like your daily work
 report, in your own format. Every answer links to what it came from.
 
+## Reminders that know the context
+
+Say *"remind me to call Anna at 5, 10 min early"* in any language, or let Gopu offer one when a reply you write sets a
+plan. When it's due, a note slides out with **Snooze**, **Done**, and **Prep me**: what memory knows about it, from who
+the person is to what you promised. Check-ins run a saved ask, like your daily report, on the days you pick.
+
 ## Open, free and yours
 
 - **Open source**, so you can check what an app that reads your screen does.
@@ -36,9 +42,9 @@ report, in your own format. Every answer links to what it came from.
 
 Windows 10 or 11 (64-bit). No admin rights needed.
 
-1. Download **`Gopu_0.1.0_x64-setup.exe`** from the [latest release](https://github.com/TusharKanjariya/gopu/releases/latest).
+1. Download **`Gopu_0.2.0_x64-setup.exe`** from the [latest release](https://github.com/TusharKanjariya/gopu/releases/latest).
 2. Windows may say **"Windows protected your PC"**. Click **More info → Run anyway**. This preview isn't code-signed
-   yet; to check the download is ours, compare `Get-FileHash .\Gopu_0.1.0_x64-setup.exe` with `SHA256SUMS.txt` on
+   yet; to check the download is ours, compare `Get-FileHash .\Gopu_0.2.0_x64-setup.exe` with `SHA256SUMS.txt` on
    the release page (upper or lower case doesn't matter).
 3. The welcome asks for a model key. A free [Groq key](https://console.groq.com/keys) takes a minute, or pick
    Ollama to keep everything on your PC.
@@ -74,7 +80,7 @@ cd apps/desktop && npx @tauri-apps/cli@2 build   # the installer
 
 ## Status
 
-0.1.0 is a **preview**: Windows only, English interface, and settings or memory formats may change between 0.x
+0.2.0 is a **preview**: Windows only, English interface, and settings or memory formats may change between 0.x
 versions. See [known issues](https://github.com/TusharKanjariya/gopu/issues). macOS is next.
 
 ## Contributing
