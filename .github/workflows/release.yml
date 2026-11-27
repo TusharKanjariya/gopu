@@ -49,3 +49,15 @@ jobs:
           sha256sum *.exe > SHA256SUMS.txt
           cat SHA256SUMS.txt
           gh release upload "$GITHUB_REF_NAME" SHA256SUMS.txt --clobber
+      # A draft's latest.json points at api.github.com asset URLs (header-dependent, rate-limited); use the public
+      # download URL the release will have once published.
+      - name: Point latest.json at the public download
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download "$GITHUB_REF_NAME" -p latest.json -D fix --clobber
+          url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/Gopu_${{ steps.v.outputs.version }}_x64-setup.exe"
+          sed -i -E "s#https://api\.github\.com/repos/[^\"]+/releases/assets/[0-9]+#${url}#g" fix/latest.json
+          grep -q "$url" fix/latest.json
+          gh release upload "$GITHUB_REF_NAME" fix/latest.json --clobber
