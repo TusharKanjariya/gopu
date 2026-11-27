@@ -313,7 +313,7 @@ function snoozes(r) {
 function drawNote() {
   const rows = due.map(r => `<div class="rem" data-id="${r.id}">${HEAD}<div class="rt"><b>${esc(r.title)}</b>${when(r)}
       <div class="rb">${r.missed ? `<button type="button" data-act="later" data-until="${Math.floor(Date.now() / 1000) + 3600}">Remind in 1 h</button>`
-        : `<button type="button" data-act="menu">Snooze ▾</button>`}<button type="button" class="p" data-act="done">Done</button>
+        : `<button type="button" data-act="menu">Snooze ▾</button>`}<button type="button" data-act="prep">Prep me</button><button type="button" class="p" data-act="done">Done</button>
         ${r.missed ? '' : `<div class="snz" hidden>${snoozes(r).map(([l, u]) => `<button type="button" data-act="later" data-until="${u}">${l}</button>`).join('')}</div>`}</div></div></div>`);
   // check-ins: each offers its saved ask
   for (const name of asks) {
@@ -340,6 +340,12 @@ $('note').addEventListener('click', async e => {
   const b = e.target.closest('button');
   if (!b) return;
   const id = +b.closest('.rem')?.dataset.id;
+  // Prep me: what memory knows about it (the person's page, captures that mention it), in the box; the note stays
+  if (b.dataset.act === 'prep') {
+    const r = due.find(x => x.id === id);
+    document.body.classList.remove('noteonly'); clearTimeout(foldT);
+    return send(`Prep me for "${r.title}": what do I know about it, what was said last, and anything I promised?`, 'Prep: ' + r.title);
+  }
   if (b.dataset.act === 'menu') return b.parentElement.querySelector('.snz').toggleAttribute('hidden');
   if (b.dataset.act === 'done') await invoke('reminder_done', { id });
   if (b.dataset.act === 'later') await invoke('reminder_snooze', { id, until: +b.dataset.until });

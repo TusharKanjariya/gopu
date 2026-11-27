@@ -19,8 +19,8 @@ const OWN_APPS: &[&str] = &["Gopu.exe", "gopu-desktop.exe"];
 const NOT_WORK: &[&str] = &["Task Switching", "Program Manager", "Task View", "Start", "Search"];
 /// Words that say nothing about what to search for.
 const FILLER: &[&str] = &[
-    "a", "about", "am", "an", "and", "any", "are", "at", "be", "can", "currently", "did", "do", "doing", "does", "for",
-    "from", "give", "have", "how", "i", "in", "is", "it", "just", "last", "me", "my", "now", "of", "on", "please",
+    "a", "about", "am", "an", "and", "any", "anything", "are", "at", "be", "can", "currently", "did", "do", "doing", "does", "for",
+    "from", "give", "have", "how", "i", "in", "is", "it", "just", "know", "last", "me", "my", "now", "of", "on", "please", "prep", "promised", "said",
     "recently", "right", "show", "so", "tell", "that", "the", "this", "to", "today", "was", "week", "were", "what",
     "when", "where", "which", "who", "why", "with", "working", "yesterday", "you",
 ];
