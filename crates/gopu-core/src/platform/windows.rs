@@ -1194,6 +1194,11 @@ pub fn raise(hwnd: *mut core::ffi::c_void) {
 }
 
 /// Is `hwnd` the window the user is in right now?
+/// The program of the window in front ("Code.exe"), for the Gopu key's per-app off list.
+pub fn foreground_app() -> String {
+    process_name(unsafe { GetForegroundWindow() })
+}
+
 pub fn is_foreground(hwnd: *mut core::ffi::c_void) -> bool {
     unsafe { GetForegroundWindow() == HWND(hwnd) }
 }

@@ -131,6 +131,10 @@
     <div class="grp"><label class="f" for="chordShow">Backup shortcut</label>
       <div class="key"><input type="text" id="chordShow" readonly placeholder="None"><button type="button" id="record">Record</button><button type="button" id="clearChord">Clear</button></div>
       <div class="hint" id="chordHint">For keyboards without your Gopu key, for example Ctrl + Alt + G. It needs Ctrl, Alt or Win.</div></div>
+    <div class="grp"><label class="f" for="koIn">Off in these apps</label>
+      <div id="koList"></div>
+      <div class="key" style="margin-top:8px"><input type="text" id="koIn" list="koApps" placeholder="An app, e.g. Code or Photoshop" spellcheck="false" aria-label="App"><datalist id="koApps"></datalist><button type="button" id="koAdd">Add</button></div>
+      <div class="hint">In these apps the Gopu key does nothing, so apps that use it themselves (games, editors) keep it.</div></div>
     <div class="grp" role="radiogroup" aria-label="Ask Gopu waits"><label class="f">Ask Gopu waits</label>
       <label class="check"><input type="radio" name="anchor" value="edge"> In a tab on the screen edge</label>
       <label class="check"><input type="radio" name="anchor" value="taskbar"> In the taskbar: Gopu's icon by the clock</label>
@@ -645,6 +649,16 @@ $('oAdd').onclick = async () => {
   } catch (e) { err(e); }
 };
 $('oCancel').onclick = () => oForm();
+
+// the Gopu key's per-app off list
+function koList(list) {
+  $('koList').innerHTML = list.map(a => `<div class="item"><span class="grow">${esc(appName(a))}</span><button class="plain" data-ko="${esc(a)}">Remove</button></div>`).join('');
+  $('koList').querySelectorAll('[data-ko]').forEach(b => b.onclick = async () => { try { koList(await invoke('key_off_set', { app: b.dataset.ko, add: false })); } catch (e) { err(e); } });
+}
+$('koAdd').onclick = async () => {
+  try { koList(await invoke('key_off_set', { app: $('koIn').value, add: true })); $('koIn').value = ''; status('Saved.', 'ok'); } catch (e) { err(e); }
+};
+$('koIn').onkeydown = e => { if (e.key === 'Enter') $('koAdd').click(); };
 // Change on the Ask box's card: the form filled with what it read, to fix before adding
 function oFill(d) { oForm(); $('oTitle').value = d.title; $('oDate').value = d.date; $('oTime').value = d.time; $('oEarly').value = String(d.early); $('oTitle').focus(); }
 
@@ -791,6 +805,8 @@ async function loadPeople() {
   $('offersOn').onchange = async () => { try { await invoke('offers_set', { on: $('offersOn').checked }); status('Saved.', 'ok'); } catch (e) { err(e); } };
   document.querySelector(`input[name=anchor][value=${data.saved.ask_anchor === 'taskbar' ? 'taskbar' : 'edge'}]`).checked = true;
   showProvider(saved);
+  koList(data.saved.key_off || []);
+  invoke('memory_state').then(m => $('koApps').innerHTML = m.apps.map(a => `<option value="${esc(appName(a))}">`).join('')).catch(() => {});
   // #search:123 opens a capture (a source cited in the Ask Gopu box)
   route(location.hash.slice(1));
 })();

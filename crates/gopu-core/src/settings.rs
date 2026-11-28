@@ -71,6 +71,8 @@ pub struct Settings {
     pub updates_off: bool,
     /// "Offer reminders from my replies" unticked (Reminders page).
     pub offers_off: bool,
+    /// Apps (exe name) where the Gopu key does nothing, so their own Right Ctrl use is left alone (Gopu key page).
+    pub key_off: Vec<String>,
     /// The Ask Gopu box is pinned: it stays on screen when the user clicks elsewhere.
     pub ask_pinned: bool,
     /// Where the pinned box was left: its bottom-left corner (physical px), so it grows upward from there.
