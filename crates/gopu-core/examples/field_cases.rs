@@ -1,5 +1,5 @@
 //! Live check of every field case against the configured LLM, with made-up screen content:
-//! `cargo run -p gopu-core --example field_cases [-- mixed|dm|plans [two]]`
+//! `cargo run -p gopu-core --example field_cases [-- mixed|dm|ai|plans [two]]`
 use gopu_core::{assist, llm::Llm, Field, OnScreenContext};
 
 fn main() {
@@ -39,6 +39,20 @@ fn main() {
             std::thread::sleep(std::time::Duration::from_secs(12)); // the free tier's per-minute limit
             match assist::run(&llm, &field(text, ""), c, &me, None) {
                 Ok(o) => println!("[{text}] -> {:?}\n  {}\n  plan: {:?}\n", o.case, o.text.replace('\n', "\n  "), o.plan),
+                Err(e) => println!("[{text}] ERROR: {e}\n"),
+            }
+        }
+        return;
+    }
+
+    // `-- ai`: text typed for another AI or a search box is polished, never answered (#1); the same words in Slack are carried out
+    if std::env::args().nth(1).as_deref() == Some("ai") {
+        let gpt = OnScreenContext { app: "chrome.exe".into(), window_title: "ChatGPT - Google Chrome".into(), before: "ChatGPT\nNew chat\nWhat can I help with?".into(), after: "Ask anything".into(), url: Some("https://chatgpt.com/".into()), ..ctx.clone() };
+        let search = OnScreenContext { app: "msedge.exe".into(), window_title: "Google - Microsoft Edge".into(), before: "Google".into(), after: "Google Search\nI'm Feeling Lucky".into(), url: Some("https://www.google.com/".into()), ..ctx.clone() };
+        for (c, text) in [(&gpt, "write me a poem about monsoon in gujrati"), (&gpt, "explain rust lifetimes like im 5. make this shorter and clearer"), (&search, "cheap flight mumbai to goa in december"), (&ctx, "write me a poem about monsoon in gujrati")] {
+            std::thread::sleep(std::time::Duration::from_secs(12)); // the free tier's per-minute limit
+            match assist::run(&llm, &field(text, ""), c, &me, None) {
+                Ok(o) => println!("[{} | {text}] -> {:?}\n  {}\n", c.app, o.case, o.text.replace('\n', "\n  ")),
                 Err(e) => println!("[{text}] ERROR: {e}\n"),
             }
         }

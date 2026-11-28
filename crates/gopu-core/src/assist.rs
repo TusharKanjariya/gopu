@@ -149,6 +149,10 @@ Carry it out; your result replaces the request. Text that asks for something to 
 instruction, even with typos or stray punctuation. So is the user's own text with a request about it, before or after it \
 (\"I'm Sam, a designer. Make it funny\", \"running 10 min late. say it politely\", \"write like a pirate: see you at 5\"): \
 their words are the material, the request says how to write them, and the request itself never appears in the result.
+- A box where the user writes to another AI assistant or a search engine (judge from the app, window title, address and \
+what's on screen): a request to write, answer or explain something is meant for that AI, not you, so it is a draft. Polish \
+it as a clearer prompt or query (a search stays a short query), same request and language, never answer it. Only a \
+request about the box's own text (\"make this shorter\", \"fix my grammar\") is an instruction there.
 If an instruction also states a lasting preference about how the user writes (\"never use emojis\", \"no greeting in Slack\", \
 \"always sign emails Thanks, Alex\"), add a line right after the tag: `remember: <the preference, short, in English> @ here` \
 when it is about this app or site, or `@ everywhere`. One-off requests (\"make this shorter\", \"translate this\") are not \
