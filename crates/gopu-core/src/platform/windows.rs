@@ -359,6 +359,7 @@ unsafe fn cached_tree(hwnd: HWND, timeout_ms: Option<u32>) -> Option<IUIAutomati
         req.AddProperty(id).ok()?;
     }
     req.AddPattern(UIA_ValuePatternId).ok()?; // a browser's address bar holds the page's address
+    req.AddPattern(UIA_TextPatternId).ok()?; // a terminal holds its text here, not in its children
     req.SetTreeScope(TreeScope_Subtree).ok()?;
     req.SetTreeFilter(&uia.ControlViewCondition().ok()?).ok()?;
     req.SetAutomationElementMode(AutomationElementMode_None).ok()?;
@@ -420,9 +421,17 @@ impl Walk {
         let kids = el.GetCachedChildren().ok().filter(|k| k.Length().unwrap_or(0) > 0);
         match kids {
             Some(kids) => {
+                let had = self.before.len() + self.after.len();
                 for i in 0..kids.Length().unwrap_or(0) {
                     if let Ok(k) = kids.GetElement(i) {
                         self.visit(&k, quiet);
+                    }
+                }
+                // children with no words (a terminal's scroll bar and image): the text is the element's own, so read
+                // the part on screen (Windows Terminal had only its title in memory, #2)
+                if !hidden && !self.anchored && self.before.len() + self.after.len() == had {
+                    if let Some(t) = visible_text(el) {
+                        self.push(&t);
                     }
                 }
             }
@@ -456,6 +465,14 @@ impl Walk {
 
 // ponytail: English names only, like the rest of the UI in 0.1; other Windows languages keep them in captures
 const CAPTION_BUTTONS: &[&str] = &["Minimize", "Maximize", "Restore", "Restore Down", "Close"];
+
+/// The on-screen part of an element's TextPattern text, when it has any.
+unsafe fn visible_text(el: &IUIAutomationElement) -> Option<String> {
+    let ranges = el.GetCachedPatternAs::<IUIAutomationTextPattern>(UIA_TextPatternId).ok()?.GetVisibleRanges().ok()?;
+    let text: Vec<String> =
+        (0..ranges.Length().ok()?).filter_map(|i| ranges.GetElement(i).ok()?.GetText(MAX_CAPTURE as i32).ok()).map(|b| b.to_string()).collect();
+    Some(text.join("\n")).filter(|t| !t.trim().is_empty())
+}
 
 /// An element's cached value (ValuePattern), when it has a non-blank one.
 unsafe fn value(el: &IUIAutomationElement) -> Option<String> {
