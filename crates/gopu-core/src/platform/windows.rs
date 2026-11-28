@@ -388,7 +388,10 @@ impl Walk {
             return;
         }
         let ty = el.CachedControlType().unwrap_or_default();
-        if ty == UIA_ScrollBarControlTypeId {
+        // an offscreen page is a background tab: Firefox keeps every tab's page in the tree, and walking them used up
+        // the node budget before the tab in front (LinkedIn kept only its title, #2)
+        let offscreen = el.CachedIsOffscreen().map(|b| b.as_bool()).unwrap_or(false);
+        if ty == UIA_ScrollBarControlTypeId || (ty == UIA_DocumentControlTypeId && offscreen) {
             return;
         }
         let quiet = quiet
@@ -410,7 +413,7 @@ impl Walk {
             self.anchored = true;
             return;
         }
-        let hidden = quiet || el.CachedIsOffscreen().map(|b| b.as_bool()).unwrap_or(false);
+        let hidden = quiet || offscreen;
         // an edit box holds its text in its value (its name is a label like "Text Editor"), and may have
         // scrollbar children, so it's read whole here, leaf or not
         if ty == UIA_EditControlTypeId && !hidden {
